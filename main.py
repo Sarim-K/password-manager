@@ -3,19 +3,17 @@ if __name__ == "__main__":
 	import sqlite3
 	from PyQt5 import QtCore, QtGui, QtWidgets, uic
 	from PyQt5.QtCore import pyqtSlot
-	import login, register, dialog
-
-	conn = sqlite3.connect("password-manager.db")
-	c = conn.cursor()
+	from backend import database_connection as db
+	import login, register, dialog 
 
 	sql_query = f"""
 	CREATE TABLE IF NOT EXISTS user_data (
 	USER_ID INTEGER PRIMARY KEY,
-	USERNAME  TEXT    (5, 30),
-	PASSWORD    TEXT    (5, 30)
+	USERNAME  TEXT    (1, 100),
+	PASSWORD    TEXT    (1, 100)
 	);"""
-	c.execute(sql_query)
-	conn.commit()
+	db.c.execute(sql_query)
+	db.conn.commit()
 
 	app = QtWidgets.QApplication(sys.argv)
 	window = login.Login()

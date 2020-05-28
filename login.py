@@ -1,5 +1,7 @@
-import sqlite3
+from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from backend import database_connection as db
+import sqlite3
 import register, dialog
 
 
@@ -36,22 +38,27 @@ class Login(QtWidgets.QMainWindow):
 		password = self.passwordEdit.text()
 		
 		if len(username) <5 or len(username) > 30:
-			errorDialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Incorrect username.")
+			errorDialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Invalid username.")
 			errorDialog.exec_()
 			self.usernameEdit.setText("")
 
 		elif len(password) <5 or len(password) > 30:
-			errorDialog = dialog.Dialog("Password must be 5 - 30 characters long!", dialogName="Incorrect password.")
+			errorDialog = dialog.Dialog("Password must be 5 - 30 characters long!", dialogName="Invalid password.")
 			errorDialog.exec_()
 			self.passwordEdit.setText("")
 
 		else:
 			sql_query = f"SELECT PASSWORD FROM user_data WHERE USERNAME = '{username}'"
-			retrieved_data = c.execute(sql_query)
-			retrieved_data = retrieved_data.fetchone()[0]
+			retrieved_data = db.c.execute(sql_query)
+			try:
+				retrieved_data = retrieved_data.fetchone()[0]
+				PasswordHasher().verify(retrieved_data, password)
+				errorDialog = dialog.Dialog("Logged in successfully!", dialogName="Success.")
+				errorDialog.exec_()
+			except Exception as e:
+				errorDialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
+				errorDialog.exec_()
 
-			if password == retrieved_data:
-				print("Logged in successfully.")
 
 	def goToRegister(self):
 		self.window = register.Register()

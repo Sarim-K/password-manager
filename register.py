@@ -1,5 +1,7 @@
-import sqlite3
+from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from backend import database_connection as db
+import sqlite3
 import login, dialog
 
 
@@ -36,6 +38,7 @@ class Register(QtWidgets.QMainWindow):
 	def validateInputs(self):
 		username = self.usernameEdit.text()
 		password = self.passwordEdit.text()
+		passwordRetype = self.passwordRetypeEdit.text()
 		
 		if len(username) <5 or len(username) > 30:
 			errorDialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Incorrect username.")
@@ -48,13 +51,24 @@ class Register(QtWidgets.QMainWindow):
 			self.passwordEdit.setText("")
 			self.passwordRetypeEdit.setText("")
 
+		elif password != passwordRetype:
+			errorDialog = dialog.Dialog("Passwords must match!", dialogName="Passwords do not match.")
+			errorDialog.exec_()
+			self.passwordEdit.setText("")
+			self.passwordRetypeEdit.setText("")			
+
 		else:
+			password = PasswordHasher().hash(password)
+
 			sql_query = f"""
 			INSERT INTO user_data(USERNAME, PASSWORD)
 			VALUES('{username}','{password}');
 			"""
-			c.execute(sql_query)
-			conn.commit()
+			db.c.execute(sql_query)
+			db.conn.commit()
+
+			print("done.")
+			print(password)
 
 	def goToLogin(self):
 		self.window = login.Login()
