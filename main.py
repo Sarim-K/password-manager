@@ -2,11 +2,10 @@ if __name__ == "__main__":
 	import sys
 	import sqlite3
 	from PyQt5 import QtCore, QtGui, QtWidgets, uic
-	from PyQt5.QtCore import pyqtSlot
 	from backend import database_connection as db
-	import login, register, dialog 
+	import login, register, dialog, vault
 
-	sql_query = f"""
+	sql_query = """
 	CREATE TABLE IF NOT EXISTS user_data (
 	USER_ID INTEGER PRIMARY KEY,
 	USERNAME  TEXT    (1, 100),
