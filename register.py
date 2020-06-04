@@ -40,35 +40,81 @@ class Register(QtWidgets.QMainWindow):
 		password = self.passwordEdit.text()
 		passwordRetype = self.passwordRetypeEdit.text()
 		
+		# validate for username length
 		if len(username) <5 or len(username) > 30:
-			errorDialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Incorrect username.")
-			errorDialog.exec_()
+			Dialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Incorrect username.")
+			Dialog.exec_()
 			self.usernameEdit.setText("")
+			return
 
-		elif len(password) <5 or len(password) > 30:
-			errorDialog = dialog.Dialog("Password must be 5 - 30 characters long!", dialogName="Incorrect password.")
-			errorDialog.exec_()
+		# validate for password length
+		elif len(password) <5 or len(password) > 30 or len(passwordRetype) <5 or len(passwordRetype) > 30:
+			Dialog = dialog.Dialog("Password must be 5 - 30 characters long!", dialogName="Incorrect password.")
+			Dialog.exec_()
 			self.passwordEdit.setText("")
 			self.passwordRetypeEdit.setText("")
+			return
 
+		# validate for matching passwords
 		elif password != passwordRetype:
-			errorDialog = dialog.Dialog("Passwords must match!", dialogName="Passwords do not match.")
-			errorDialog.exec_()
+			Dialog = dialog.Dialog("Passwords must match!", dialogName="Passwords do not match.")
+			Dialog.exec_()
 			self.passwordEdit.setText("")
-			self.passwordRetypeEdit.setText("")			
+			self.passwordRetypeEdit.setText("")
+			return		
 
-		else:
+		# validate for existing account
+		sql_query = f"SELECT USERNAME FROM user_data WHERE USERNAME = '{username}'"
+		retrieved_data = db.c.execute(sql_query)
+		try:
+			retrieved_data.fetchone()[0]
+			Dialog = dialog.Dialog("Username already registered!", dialogName="Account already exists.")
+			Dialog.exec_()
+			return
+		except TypeError:
 			password = PasswordHasher().hash(password)
 
-			sql_query = f"""
-			INSERT INTO user_data(USERNAME, PASSWORD)
-			VALUES('{username}','{password}');
-			"""
-			db.c.execute(sql_query)
-			db.conn.commit()
+		# insert username & password into database
+		sql_query = f"""
+		INSERT INTO user_data(USERNAME, PASSWORD)
+		VALUES('{username}','{password}');
+		"""
+		db.c.execute(sql_query)
+		db.conn.commit()
 
-			print("done.")
-			print(password)
+		# get user's id
+		sql_query = f"SELECT USER_ID FROM user_data WHERE USERNAME = '{username}'"
+		user_id = db.c.execute(sql_query).fetchone()[0]
+
+		# create user's passwords table
+		sql_query = f"""
+		CREATE TABLE {user_id}_passwords (
+		ID INTEGER PRIMARY KEY,
+		URL    		TEXT    (1, 100),
+		USERNAME    TEXT    (1, 100),
+		EMAIL   	TEXT    (1, 100),
+		PASSWORD   	TEXT    (1, 100),
+		OTHER  		TEXT    (1, 100)
+		);"""
+		db.c.execute(sql_query)
+		db.conn.commit()
+
+		#create user's notes table
+		sql_query = f"""
+		CREATE TABLE {user_id}_notes (
+		ID INTEGER PRIMARY KEY,
+		TITLE    	TEXT    (1, 100),
+		CONTENT   	TEXT    (1, 100)
+		);"""
+		db.c.execute(sql_query)
+		db.conn.commit()		
+
+		Dialog = dialog.Dialog("Account registered successfully!", dialogName="Success.")
+		Dialog.exec_()
+
+		self.usernameEdit.setText("")
+		self.passwordEdit.setText("")
+		self.passwordRetypeEdit.setText("")
 
 	def goToLogin(self):
 		self.window = login.Login()
