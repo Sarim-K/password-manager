@@ -37,20 +37,22 @@ class Login(QtWidgets.QMainWindow):
 		username = self.usernameEdit.text()
 		password = self.passwordEdit.text()
 
-		sql_query = f"SELECT PASSWORD FROM user_data WHERE USERNAME = '{username}'"
-		retrieved_data = db.c.execute(sql_query)
+		sql_query = f"SELECT * FROM user_data WHERE USERNAME = '{username}'"
+		retrieved_data = db.c.execute(sql_query).fetchone()
+
 		try:
-			retrieved_data = retrieved_data.fetchone()[0]
-			PasswordHasher().verify(retrieved_data, password)
+			user_id, retrieved_password = retrieved_data[0], retrieved_data[2]
+			PasswordHasher().verify(retrieved_password, password)
 			Dialog = dialog.Dialog("Logged in successfully!", dialogName="Success.")
 			Dialog.exec_()
 		except Exception as e:
+			print(e)
 			Dialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
 			Dialog.exec_()
 			return
 
 		try:
-			self.window = vault.Vault()
+			self.window = vault.Vault(user_id)
 			self.close()
 		except Exception as e:
 			print(e)
