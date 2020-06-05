@@ -88,7 +88,7 @@ class Register(QtWidgets.QMainWindow):
 
 		# create user's passwords table
 		sql_query = f"""
-		CREATE TABLE {user_id}_passwords (
+		CREATE TABLE '{user_id}_passwords' (
 		ID INTEGER PRIMARY KEY,
 		URL    		TEXT    (1, 100),
 		USERNAME    TEXT    (1, 100),
@@ -98,16 +98,6 @@ class Register(QtWidgets.QMainWindow):
 		);"""
 		db.c.execute(sql_query)
 		db.conn.commit()
-
-		#create user's notes table
-		sql_query = f"""
-		CREATE TABLE {user_id}_notes (
-		ID INTEGER PRIMARY KEY,
-		TITLE    	TEXT    (1, 100),
-		CONTENT   	TEXT    (1, 100)
-		);"""
-		db.c.execute(sql_query)
-		db.conn.commit()		
 
 		Dialog = dialog.Dialog("Account registered successfully!", dialogName="Success.")
 		Dialog.exec_()
