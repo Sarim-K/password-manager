@@ -64,7 +64,7 @@ class Register(QtWidgets.QMainWindow):
 			return		
 
 		# validate for existing account
-		sql_query = f"SELECT USERNAME FROM user_data WHERE USERNAME = '{username}'"
+		sql_query = f"SELECT USERNAME FROM user-data WHERE USERNAME = '{username}'"
 		retrieved_data = db.c.execute(sql_query)
 		try:
 			retrieved_data.fetchone()[0]
@@ -76,19 +76,19 @@ class Register(QtWidgets.QMainWindow):
 
 		# insert username & password into database
 		sql_query = f"""
-		INSERT INTO user_data(USERNAME, PASSWORD)
+		INSERT INTO user-data(USERNAME, PASSWORD)
 		VALUES('{username}','{password}');
 		"""
 		db.c.execute(sql_query)
 		db.conn.commit()
 
 		# get user's id
-		sql_query = f"SELECT USER_ID FROM user_data WHERE USERNAME = '{username}'"
+		sql_query = f"SELECT USER_ID FROM user-data WHERE USERNAME = '{username}'"
 		user_id = db.c.execute(sql_query).fetchone()[0]
 
 		# create user's passwords table
 		sql_query = f"""
-		CREATE TABLE '{user_id}_passwords' (
+		CREATE TABLE '{user_id}-passwords' (
 		ID INTEGER PRIMARY KEY,
 		URL    		TEXT    (1, 100),
 		USERNAME    TEXT    (1, 100),
