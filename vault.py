@@ -1,6 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
-import sqlite3
+import sqlite3, dialog
 
 class Preview(QtWidgets.QWidget):
 	def __init__(self, password_row_data):
@@ -51,7 +51,7 @@ class enterDataDialog(QtWidgets.QDialog):
 
 	@property
 	def text(self):
-		return self._text
+		return f"{self._text.replace('/', '')}/"
 
 
 class Vault(QtWidgets.QMainWindow):
@@ -69,23 +69,31 @@ class Vault(QtWidgets.QMainWindow):
 		self.show()
 
 	def drawExplorer(self):
+		self.Explorer.clear()
 		self.Explorer.setHeaderLabels(["Name", "Type"])
 
-		a = QtWidgets.QTreeWidgetItem(self.Explorer, ["test", "Folder"])
-		a1 = QtWidgets.QTreeWidgetItem(a, ["test2", "Password"])
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%'"
+		folders = db.c.execute(sql_query).fetchall()
 
-		b = QtWidgets.QTreeWidgetItem(self.Explorer, ["test3", "Folder"])
-		b1 = QtWidgets.QTreeWidgetItem(b, ["test4", "Password"])
+		for folder in folders:
+			sanitisedFolderName = folder[0].replace(f"{self._user_id}-folder-","").strip("/")
+			f1 = QtWidgets.QTreeWidgetItem(self.Explorer, [sanitisedFolderName, "Folder"])
 
-		ba = QtWidgets.QTreeWidgetItem(b, ["test5", "Folder"])
-		ba1 = QtWidgets.QTreeWidgetItem(ba, ["test6", "Password"])
+			sql_query = f"SELECT PASSWORD_ID FROM '{folder[0]}'"
+			password_ids = db.c.execute(sql_query).fetchall()
+
+			for password in password_ids:
+				sql_query = f"SELECT URL FROM '{self._user_id}-passwords' WHERE ID = '{password[0]}'"
+				password_url = db.c.execute(sql_query).fetchone()
+
+				QtWidgets.QTreeWidgetItem(f1, [password_url[0], "Password"])
 
 
 	def drawPreviews(self):
 		x, y = 0, 0
 		max_preview_width = int(self.width()/200) #the previews are 200px long
 
-		sql_query = f"SELECT * FROM '{self._user_id}_passwords'"
+		sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
 		data = db.c.execute(sql_query).fetchall()
 
 		for preview_data in data:
@@ -106,12 +114,21 @@ class Vault(QtWidgets.QMainWindow):
 		folderName = Dialog.text
 
 		sql_query = f"""
-		CREATE TABLE '{self._user_id}_folder_{folderName}' (
+		CREATE TABLE '{self._user_id}-folder-{folderName}' (
 		PASSWORD_ID INTEGER PRIMARY KEY
 		);"""
-		db.c.execute(sql_query)
-		db.conn.commit()
-		print("Done.")
+
+		try:
+			db.c.execute(sql_query)
+			db.conn.commit()
+		except sqlite3.OperationalError:
+			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
+			Dialog.exec_()
+
+		Dialog.close()
+
+		self.drawExplorer()
+
 
 if __name__ == "__main__":
 	import sys
