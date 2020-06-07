@@ -71,14 +71,14 @@
       <item>
        <widget class="QTreeWidget" name="Explorer">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
         <property name="minimumSize">
          <size>
-          <width>250</width>
+          <width>300</width>
           <height>0</height>
          </size>
         </property>
@@ -86,6 +86,12 @@
          <size>
           <width>16777215</width>
           <height>16777215</height>
+         </size>
+        </property>
+        <property name="baseSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
          </size>
         </property>
         <property name="focusPolicy">
@@ -125,7 +131,7 @@
       <item>
        <layout class="QGridLayout" name="gridLayout" columnstretch="0" rowminimumheight="0" columnminimumwidth="0">
         <property name="sizeConstraint">
-         <enum>QLayout::SetFixedSize</enum>
+         <enum>QLayout::SetMinimumSize</enum>
         </property>
         <property name="spacing">
          <number>5</number>
