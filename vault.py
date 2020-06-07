@@ -1,7 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 import sqlite3, dialog
-import pprint, json
 
 class Preview(QtWidgets.QWidget):
 	def __init__(self, password_row_data):
@@ -66,14 +65,48 @@ class Vault(QtWidgets.QMainWindow):
 		self.preview_dict = {}
 
 		self.Explorer = self.findChild(QtWidgets.QTreeWidget, "Explorer")
+		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
 
 		self.newFolder.triggered.connect(self.addFolder)
 
-		self.drawPreviews()
+		self.drawPreviews(suppliedPreviewData=False)
 		self.drawExplorer()
 		self.show()
 
 
+	def drawFolderPreviews(self):
+		suppliedPreviewData = []
+		path_array = []
+		final_path = ""
+
+		item = self.Explorer.currentItem()
+		if item.text(1) != "Folder":
+			return
+
+		try:
+			while True:
+				item2 = item.parent()
+				path_array.append(f"{item.text(0)}/")
+				item = item2
+		except AttributeError:
+			path_array.reverse()
+			
+			for subpath in path_array:
+				final_path += subpath
+			
+			final_path = f"{self._user_id}-folder-{final_path}"
+
+			sql_query = f"SELECT PASSWORD_ID FROM '{final_path}'"
+			password_ids = db.c.execute(sql_query).fetchall()
+
+			for password in password_ids:
+				sql_query = f"SELECT * FROM '{self._user_id}-passwords' WHERE ID = {password[0]}"
+				data = db.c.execute(sql_query).fetchone()
+				suppliedPreviewData.append(data)
+
+			self.drawPreviews(suppliedPreviewData=suppliedPreviewData)
+
+		
 	def append_to_tree(self, node, c):
 		if not c:
 			return
@@ -83,38 +116,64 @@ class Vault(QtWidgets.QMainWindow):
 
 		self.append_to_tree(node[c[0]], c[1:])	
 
+
 	def drawExplorer(self):
 		folderArray = []
+		folderArray2 = []
 		root = {}
 
 		self.Explorer.clear()
 		self.Explorer.setHeaderLabels(["Name", "Type"])
+		self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
 
 		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
 		for folder in folders:
-			folderArray.append(folder[0].strip("/"))
+			folderArray.append(folder[0])
 
-		print(folderArray)
-		
-		for path in folderArray:
+		folders = folderArray
+
+		for folder in folderArray:
+			sql_query = f"SELECT PASSWORD_ID FROM '{folder}'"
+			password_ids = db.c.execute(sql_query).fetchall()
+
+			folderArray2.append(folder.strip("/"))
+			for password in password_ids:
+				sql_query = f"SELECT URL FROM '{self._user_id}-passwords' WHERE ID = {password[0]}"
+				url = db.c.execute(sql_query).fetchone()
+				folderArray2.append(f"{folder}{url[0]}".strip("/"))
+
+		for path in folderArray2:
 			self.append_to_tree(root, path.split('/'))
 
-		self.fill_widget(self.Explorer, root)
+		self.fill_explorer(self.Explorer.invisibleRootItem(), root, folders)
+		self.Explorer.expandAll()
 
 
-	def fill_item(self, item, value):
-		if type(value) is dict:
-			for key, val in sorted(value.items()):
+	def fill_explorer(self, explorer_widget, dict_tree, folders):
+		if type(dict_tree) is dict:
+			for key, val in dict_tree.items():
+				
 				child = QtWidgets.QTreeWidgetItem()
-				child.setText(0, key)
-				item.addChild(child)
-				self.fill_item(child, val)
-		elif type(value) is list:
-			for val in value:
+				child.setText(0, key.replace(f"{self._user_id}-folder-", ""))
+
+				for folder in folders:
+					if key in folder:
+						Type = "Folder"
+						break
+					else:
+						Type = "Password"
+
+				child.setText(1, Type)
+				explorer_widget.addChild(child)
+				self.fill_explorer(child, val, folders)
+				
+
+		elif type(dict_tree) is list:
+			for val in dict_tree:
 				child = QtWidgets.QTreeWidgetItem()
-				item.addChild(child)
+				explorer_widget.addChild(child)
 			if type(val) is dict:      
 				child.setText(0, '[dict]')
 				self.fill_item(child, val)
@@ -122,26 +181,26 @@ class Vault(QtWidgets.QMainWindow):
 				child.setText(0, '[list]')
 				self.fill_item(child, val)
 			else:
-				child.setText(0, val)              
-			child.setExpanded(True)
+				child.setText(0, val)
 		else:
 			child = QTreeWidgetItem()
-			child.setText(0, value)
-			item.addChild(child)
+			child.setText(0, dict_tree)
+			explorer_widget.addChild(child)
 
 
-	def fill_widget(self, widget, value):
-		widget.clear()
-		self.fill_item(widget.invisibleRootItem(), value)
-		widget.expandAll()
-
-
-	def drawPreviews(self):
+	def drawPreviews(self, suppliedPreviewData=False):
 		x, y = 0, 0
 		max_preview_width = int(self.width()/200) #the previews are 200px long
 
-		sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
-		data = db.c.execute(sql_query).fetchall()
+		for i in reversed(range(self.gridLayout.count())): 	# clears the grid
+			self.gridLayout.itemAt(i).widget().setParent(None)
+
+		if suppliedPreviewData == False:
+			sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
+			data = db.c.execute(sql_query).fetchall()
+		else:
+			data = suppliedPreviewData
+			del suppliedPreviewData
 
 		for preview_data in data:
 			if x == max_preview_width:
@@ -153,7 +212,7 @@ class Vault(QtWidgets.QMainWindow):
 			self.gridLayout.addWidget(tempPreview, y, x)
 
 			x += 1
-	
+
 
 	def addFolder(self):
 		Dialog = enterDataDialog(title="Enter folder name:")
