@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 import sqlite3, dialog
+import pprint, json
 
 class Preview(QtWidgets.QWidget):
 	def __init__(self, password_row_data):
@@ -36,9 +37,11 @@ class expandDialog(QtWidgets.QDialog):
 
 
 class enterDataDialog(QtWidgets.QDialog):
-	def __init__(self):
+	def __init__(self, title=""):
 		super(enterDataDialog, self).__init__()
 		uic.loadUi("ui_files/vault/enterDataDialog.ui", self)
+
+		self.setWindowTitle(title)
 
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
 		self.OKButton.clicked.connect(self.saveText)
@@ -62,31 +65,75 @@ class Vault(QtWidgets.QMainWindow):
 		self._user_id = user_id
 		self.preview_dict = {}
 
+		self.Explorer = self.findChild(QtWidgets.QTreeWidget, "Explorer")
+
 		self.newFolder.triggered.connect(self.addFolder)
 
 		self.drawPreviews()
 		self.drawExplorer()
 		self.show()
 
+
+	def append_to_tree(self, node, c):
+		if not c:
+			return
+
+		if c[0] not in node:
+			node[c[0]] = {}
+
+		self.append_to_tree(node[c[0]], c[1:])	
+
 	def drawExplorer(self):
+		folderArray = []
+		root = {}
+
 		self.Explorer.clear()
 		self.Explorer.setHeaderLabels(["Name", "Type"])
 
-		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%'"
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
 		for folder in folders:
-			sanitisedFolderName = folder[0].replace(f"{self._user_id}-folder-","").strip("/")
-			f1 = QtWidgets.QTreeWidgetItem(self.Explorer, [sanitisedFolderName, "Folder"])
+			folderArray.append(folder[0].strip("/"))
 
-			sql_query = f"SELECT PASSWORD_ID FROM '{folder[0]}'"
-			password_ids = db.c.execute(sql_query).fetchall()
+		print(folderArray)
+		
+		for path in folderArray:
+			self.append_to_tree(root, path.split('/'))
 
-			for password in password_ids:
-				sql_query = f"SELECT URL FROM '{self._user_id}-passwords' WHERE ID = '{password[0]}'"
-				password_url = db.c.execute(sql_query).fetchone()
+		self.fill_widget(self.Explorer, root)
 
-				QtWidgets.QTreeWidgetItem(f1, [password_url[0], "Password"])
+
+	def fill_item(self, item, value):
+		if type(value) is dict:
+			for key, val in sorted(value.items()):
+				child = QtWidgets.QTreeWidgetItem()
+				child.setText(0, key)
+				item.addChild(child)
+				self.fill_item(child, val)
+		elif type(value) is list:
+			for val in value:
+				child = QtWidgets.QTreeWidgetItem()
+				item.addChild(child)
+			if type(val) is dict:      
+				child.setText(0, '[dict]')
+				self.fill_item(child, val)
+			elif type(val) is list:
+				child.setText(0, '[list]')
+				self.fill_item(child, val)
+			else:
+				child.setText(0, val)              
+			child.setExpanded(True)
+		else:
+			child = QTreeWidgetItem()
+			child.setText(0, value)
+			item.addChild(child)
+
+
+	def fill_widget(self, widget, value):
+		widget.clear()
+		self.fill_item(widget.invisibleRootItem(), value)
+		widget.expandAll()
 
 
 	def drawPreviews(self):
@@ -109,9 +156,13 @@ class Vault(QtWidgets.QMainWindow):
 	
 
 	def addFolder(self):
-		Dialog = enterDataDialog()
+		Dialog = enterDataDialog(title="Enter folder name:")
 		Dialog.exec_()
-		folderName = Dialog.text
+
+		try:
+			folderName = Dialog.text
+		except AttributeError: #user exited dialog, didn't successfully input
+			pass
 
 		sql_query = f"""
 		CREATE TABLE '{self._user_id}-folder-{folderName}' (
