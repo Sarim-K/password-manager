@@ -73,15 +73,17 @@ class Vault(QtWidgets.QMainWindow):
 		self.drawExplorer()
 		self.show()
 
-
-	def drawFolderPreviews(self):
-		suppliedPreviewData = []
+	def getCurrentItemPath(self):
 		path_array = []
 		final_path = ""
 
 		item = self.Explorer.currentItem()
+
+		if item is None:	# if user hasn't selected anything
+			return	
+
 		if item.text(1) != "Folder":
-			return
+			item = self.Explorer.currentItem().parent()	# selects the folder the password is in, rather than the password itself
 
 		try:
 			while True:
@@ -90,21 +92,31 @@ class Vault(QtWidgets.QMainWindow):
 				item = item2
 		except AttributeError:
 			path_array.reverse()
-			
+
 			for subpath in path_array:
-				final_path += subpath
-			
+				final_path += subpath	
 			final_path = f"{self._user_id}-folder-{final_path}"
+			
+			return final_path
 
-			sql_query = f"SELECT PASSWORD_ID FROM '{final_path}'"
+
+	def drawFolderPreviews(self):	
+		suppliedPreviewData = []
+
+		final_path = self.getCurrentItemPath()
+
+		sql_query = f"SELECT PASSWORD_ID FROM '{final_path}'"
+		try:
 			password_ids = db.c.execute(sql_query).fetchall()
+		except sqlite3.OperationalError:	# thrown when an event is called that gets rid of the current selection (i.e. creating a new folder)
+			return
 
-			for password in password_ids:
-				sql_query = f"SELECT * FROM '{self._user_id}-passwords' WHERE ID = {password[0]}"
-				data = db.c.execute(sql_query).fetchone()
-				suppliedPreviewData.append(data)
+		for password in password_ids:
+			sql_query = f"SELECT * FROM '{self._user_id}-passwords' WHERE ID = {password[0]}"
+			data = db.c.execute(sql_query).fetchone()
+			suppliedPreviewData.append(data)
 
-			self.drawPreviews(suppliedPreviewData=suppliedPreviewData)
+		self.drawPreviews(suppliedPreviewData=suppliedPreviewData)
 
 		
 	def append_to_tree(self, node, c):
@@ -193,7 +205,7 @@ class Vault(QtWidgets.QMainWindow):
 		max_preview_width = int(self.width()/200) #the previews are 200px long
 
 		for i in reversed(range(self.gridLayout.count())): 	# clears the grid
-			self.gridLayout.itemAt(i).widget().setParent(None)
+				self.gridLayout.itemAt(i).widget().setParent(None)
 
 		if suppliedPreviewData == False:
 			sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
@@ -220,11 +232,17 @@ class Vault(QtWidgets.QMainWindow):
 
 		try:
 			folderName = Dialog.text
-		except AttributeError: #user exited dialog, didn't successfully input
-			pass
+		except (UnboundLocalError, AttributeError): #user exited dialog, didn't successfully input
+			return
 
+		path = self.getCurrentItemPath()
+		if path is None:
+			folderName = f"{self._user_id}-folder-{folderName}"
+		else:
+			folderName = f"{path}{folderName}"
+		
 		sql_query = f"""
-		CREATE TABLE '{self._user_id}-folder-{folderName}' (
+		CREATE TABLE '{folderName}' (
 		PASSWORD_ID INTEGER PRIMARY KEY
 		);"""
 
