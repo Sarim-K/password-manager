@@ -6,7 +6,7 @@ if __name__ == "__main__":
 	import login, register, dialog, vault
 
 	sql_query = """
-	CREATE TABLE IF NOT EXISTS user-data (
+	CREATE TABLE IF NOT EXISTS 'user-data' (
 	USER_ID INTEGER PRIMARY KEY,
 	USERNAME  TEXT    (1, 100),
 	PASSWORD    TEXT    (1, 100)

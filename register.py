@@ -64,7 +64,7 @@ class Register(QtWidgets.QMainWindow):
 			return		
 
 		# validate for existing account
-		sql_query = f"SELECT USERNAME FROM user-data WHERE USERNAME = '{username}'"
+		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = '{username}'"
 		retrieved_data = db.c.execute(sql_query)
 		try:
 			retrieved_data.fetchone()[0]
@@ -76,14 +76,14 @@ class Register(QtWidgets.QMainWindow):
 
 		# insert username & password into database
 		sql_query = f"""
-		INSERT INTO user-data(USERNAME, PASSWORD)
-		VALUES('{username}','{password}');
+		INSERT OR REPLACE INTO 'user-data'
+		VALUES(?, ?,?)
 		"""
-		db.c.execute(sql_query)
+		db.c.execute(sql_query, (None, username, password))
 		db.conn.commit()
 
 		# get user's id
-		sql_query = f"SELECT USER_ID FROM user-data WHERE USERNAME = '{username}'"
+		sql_query = f"SELECT USER_ID FROM 'user-data' WHERE USERNAME = '{username}'"
 		user_id = db.c.execute(sql_query).fetchone()[0]
 
 		# create user's passwords table
@@ -95,6 +95,14 @@ class Register(QtWidgets.QMainWindow):
 		EMAIL   	TEXT    (1, 100),
 		PASSWORD   	TEXT    (1, 100),
 		OTHER  		TEXT    (1, 100)
+		);"""
+		db.c.execute(sql_query)
+		db.conn.commit()
+
+		# create user's all folder table
+		sql_query = f"""
+		CREATE TABLE '{user_id}-folder-All/' (
+		PASSWORD_ID INTEGER PRIMARY KEY
 		);"""
 		db.c.execute(sql_query)
 		db.conn.commit()
