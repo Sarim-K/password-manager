@@ -35,12 +35,12 @@ class expandDialog(QtWidgets.QDialog):
 		self.show()
 
 
-class enterDataDialog(QtWidgets.QDialog):
-	def __init__(self, title=""):
-		super(enterDataDialog, self).__init__()
-		uic.loadUi("ui_files/vault/enterDataDialog.ui", self)
+class enterFolderDialog(QtWidgets.QDialog):
+	def __init__(self):
+		super(enterFolderDialog, self).__init__()
+		uic.loadUi("ui_files/vault/enterFolderDialog.ui", self)
 
-		self.setWindowTitle(title)
+		self.setWindowTitle("Enter folder name:")
 
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
 		self.OKButton.clicked.connect(self.saveText)
@@ -56,6 +56,33 @@ class enterDataDialog(QtWidgets.QDialog):
 		return f"{self._text.replace('/', '')}/"
 
 
+class enterDataDialog(QtWidgets.QDialog):
+	def __init__(self):
+		super(enterDataDialog, self).__init__()
+		uic.loadUi("ui_files/vault/enterDataDialog.ui", self)
+
+		self.setWindowTitle("Enter details:")
+
+		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
+		self.OKButton.clicked.connect(self.saveDetails)
+
+		self.show()
+
+	@property
+	def details(self):
+		return self._data_dict
+
+	def saveDetails(self):
+		data_dict = {}
+		data_dict["url"] = self.urlEdit.text()
+		data_dict["username"] = self.usernameEdit.text()
+		data_dict["email"] = self.emailEdit.text()
+		data_dict["password"] = self.passwordEdit.text()
+		data_dict["other"] = self.otherEdit.text()
+		self._data_dict = data_dict
+		self.close()
+
+
 class Vault(QtWidgets.QMainWindow):
 	def __init__(self, user_id):
 		super(Vault, self).__init__()
@@ -68,6 +95,7 @@ class Vault(QtWidgets.QMainWindow):
 		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
 
 		self.newFolder.triggered.connect(self.addFolder)
+		self.newEntry.triggered.connect(self.addEntry)
 
 		self.drawPreviews(suppliedPreviewData=False)
 		self.drawExplorer()
@@ -202,7 +230,7 @@ class Vault(QtWidgets.QMainWindow):
 
 	def drawPreviews(self, suppliedPreviewData=False):
 		x, y = 0, 0
-		max_preview_width = int(self.width()/200) #the previews are 200px long
+		max_preview_width = 4 #the previews are 200px long
 
 		for i in reversed(range(self.gridLayout.count())): 	# clears the grid
 				self.gridLayout.itemAt(i).widget().setParent(None)
@@ -227,7 +255,7 @@ class Vault(QtWidgets.QMainWindow):
 
 
 	def addFolder(self):
-		Dialog = enterDataDialog(title="Enter folder name:")
+		Dialog = enterFolderDialog()
 		Dialog.exec_()
 
 		try:
@@ -236,7 +264,7 @@ class Vault(QtWidgets.QMainWindow):
 			return
 
 		path = self.getCurrentItemPath()
-		if path is None:
+		if path is None or path == f"{self._user_id}-folder-All/":
 			folderName = f"{self._user_id}-folder-{folderName}"
 		else:
 			folderName = f"{path}{folderName}"
@@ -256,6 +284,55 @@ class Vault(QtWidgets.QMainWindow):
 		Dialog.close()
 
 		self.drawExplorer()
+
+		if self.getCurrentItemPath():
+			self.drawFolderPreviews()
+		else:
+			self.drawPreviews()
+
+
+	def addEntry(self):
+		Dialog = enterDataDialog()
+		Dialog.exec_()
+
+		try:
+			details = Dialog.details
+		except (UnboundLocalError, AttributeError):	#user exited dialog, didn't successfully input
+			return
+
+		sql_query = f"""
+					INSERT OR REPLACE INTO '{self._user_id}-passwords'
+					VALUES(?,?,?,?,?,?)
+					"""
+		db.c.execute(sql_query, (None, details["url"], details["username"], details["email"], details["password"], details["other"]))
+		db.conn.commit()
+
+		path = self.getCurrentItemPath()
+		if path is None:
+			path = f"{self._user_id}-folder-All/"
+
+		sql_query = f"""
+					INSERT OR REPLACE INTO '{path}'
+					VALUES(?)
+					"""
+		db.c.execute(sql_query, (db.c.lastrowid,))
+		db.conn.commit()
+
+		print(db.c.lastrowid)
+
+		sql_query = f"""
+					INSERT OR REPLACE INTO '{self._user_id}-folder-All/'
+					VALUES(?)
+					"""
+		db.c.execute(sql_query, (db.c.lastrowid,))
+		db.conn.commit()
+
+		self.drawExplorer()
+
+		if self.getCurrentItemPath():
+			self.drawFolderPreviews()
+		else:
+			self.drawPreviews()	
 
 
 if __name__ == "__main__":
