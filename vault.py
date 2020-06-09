@@ -1,16 +1,18 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
+from backend import encryption as enc
 import sqlite3, dialog
 
 class Preview(QtWidgets.QWidget):
 	changeMade = QtCore.pyqtSignal()
 
-	def __init__(self, password_row_data, user_id):
+	def __init__(self, key, password_row_data, user_id):
 		super().__init__()
 		uic.loadUi("ui_files/vault/preview.ui", self)
 
 		self._password_row_data = password_row_data
 		self._user_id = user_id
+		self._key = key
 
 		self.urlLabel.setText(password_row_data[1])
 
@@ -29,6 +31,10 @@ class Preview(QtWidgets.QWidget):
 		return self._password_row_data[0]
 
 
+	@property
+	def key(self):
+		return self._key
+
 	def remove(self):
 		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self.user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
@@ -46,12 +52,12 @@ class Preview(QtWidgets.QWidget):
 
 
 	def expand(self):
-		Dialog = expandDialog(self._password_row_data)
+		Dialog = expandDialog(self.key, self._password_row_data)
 		Dialog.exec_()
 
 
 	def edit(self):
-		Dialog = enterDataDialog(password_row_data=self._password_row_data)
+		Dialog = enterDataDialog(self.key, password_row_data=self._password_row_data)
 		Dialog.exec_()
 
 		details = Dialog.details
@@ -65,17 +71,29 @@ class Preview(QtWidgets.QWidget):
 					OTHER = ?
 					WHERE ID = ?
 					"""
-		db.c.execute(sql_query, (details["url"], details["username"], details["email"], details["password"], details["other"], self.id))
-		db.conn.commit()
+		try:
+			db.c.execute(sql_query, (details["url"], details["username"], details["email"], details["password"], details["other"], self.id))
+			db.conn.commit()
+		except TypeError:	# user exited dialog without entering anything
+			return
 
 		self.changeMade.emit()
 
 
 class expandDialog(QtWidgets.QDialog):
-	def __init__(self, password_row_data):
+	def __init__(self, key, password_row_data):
 		super().__init__()
 		uic.loadUi("ui_files/vault/expandDialog.ui", self)
+		self._key = key
 
+		self.displayDetails(password_row_data)
+
+
+	@property
+	def key(self):
+		return self._key
+
+	def displayDetails(self, password_row_data):
 		self.urlLabel.setText(password_row_data[1])
 		self.usernameLabel.setText(password_row_data[2])
 		self.emailLabel.setText(password_row_data[3])
@@ -86,12 +104,11 @@ class expandDialog(QtWidgets.QDialog):
 
 
 class enterFolderDialog(QtWidgets.QDialog):
-	def __init__(self, folderName=""):
+	def __init__(self, key, folderName=""):
 		super().__init__()
 		uic.loadUi("ui_files/vault/enterFolderDialog.ui", self)
 
 		self.setWindowTitle("Enter folder name:")
-
 		self.lineEdit.setText(folderName)
 
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
@@ -119,7 +136,7 @@ class enterFolderDialog(QtWidgets.QDialog):
 
 
 class enterDataDialog(QtWidgets.QDialog):
-	def __init__(self, password_row_data=["", "", "", "", "", ""]):
+	def __init__(self, key, password_row_data=["", "", "", "", "", ""]):
 		super().__init__()
 		uic.loadUi("ui_files/vault/enterDataDialog.ui", self)
 
@@ -131,34 +148,44 @@ class enterDataDialog(QtWidgets.QDialog):
 
 		self.setWindowTitle("Enter details:")
 
+		self._key = key
+
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
 		self.OKButton.clicked.connect(self.saveDetails)
 
 		self.show()
 
+	
+	@property
+	def key(self):
+		return self._key
+
 	@property
 	def details(self):
-		return self._data_dict
-
+		try:
+			return self._data_dict
+		except AttributeError:	# user exited dialog without entering anything
+			return
 
 	def saveDetails(self):
 		data_dict = {}
-		data_dict["url"] = self.urlEdit.text()
-		data_dict["username"] = self.usernameEdit.text()
-		data_dict["email"] = self.emailEdit.text()
-		data_dict["password"] = self.passwordEdit.text()
-		data_dict["other"] = self.otherEdit.text()
+		data_dict["url"] = enc.encrypt(self.key, self.urlEdit.text())
+		data_dict["username"] = enc.encrypt(self.key, self.usernameEdit.text())
+		data_dict["email"] = enc.encrypt(self.key, self.emailEdit.text())
+		data_dict["password"] = enc.encrypt(self.key, self.passwordEdit.text())
+		data_dict["other"] = enc.encrypt(self.key, self.otherEdit.text())
 		self._data_dict = data_dict
 		self.close()
 
 
 class Vault(QtWidgets.QMainWindow):
-	def __init__(self, user_id):
+	def __init__(self, user_id, password_given):
 		super().__init__()
 		uic.loadUi("ui_files/vault/vault.ui", self)
 
 		self._user_id = user_id
 		self.preview_dict = {}
+		self._key = enc.create_key(password_given)
 
 		self.deleteFolderButton.clicked.connect(self.deleteFolder)
 		self.editFolderButton.clicked.connect(self.editFolder)
@@ -171,6 +198,11 @@ class Vault(QtWidgets.QMainWindow):
 		self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
 
 		self.show()
+
+
+	@property
+	def key(self):
+		return self._key
 
 
 	@property
@@ -219,8 +251,8 @@ class Vault(QtWidgets.QMainWindow):
 			return
 
 		for password in password_ids:
-			sql_query = f"SELECT * FROM '{self.user_id}-passwords' WHERE ID = {password[0]}"
-			data = db.c.execute(sql_query).fetchone()
+			sql_query = f"SELECT * FROM '{self.user_id}-passwords' WHERE ID = ?"
+			data = db.c.execute(sql_query, (password[0],)).fetchone()
 			suppliedPreviewData.append(data)
 
 		self.drawPreviews(suppliedPreviewData=suppliedPreviewData)
@@ -258,9 +290,11 @@ class Vault(QtWidgets.QMainWindow):
 
 			folderArray2.append(folder.strip("/"))
 			for password in password_ids:
-				sql_query = f"SELECT URL FROM '{self.user_id}-passwords' WHERE ID = {password[0]}"
-				url = db.c.execute(sql_query).fetchone()
-				folderArray2.append(f"{folder}{url[0]}".strip("/"))
+				sql_query = f"SELECT URL FROM '{self.user_id}-passwords' WHERE ID = ?"
+				url = db.c.execute(sql_query, (password[0],)).fetchone()
+				
+				url = enc.decrypt(self.key, url[0]).decode("utf-8")
+				folderArray2.append(f"{folder}{url}".strip("/"))
 
 		for path in folderArray2:
 			self.append_to_tree(root, path.split('/'))
@@ -271,8 +305,7 @@ class Vault(QtWidgets.QMainWindow):
 
 	def fill_explorer(self, explorer_widget, dict_tree, folders):
 		if type(dict_tree) is dict:
-			for key, val in dict_tree.items():
-				
+			for key, val in dict_tree.items():		
 				child = QtWidgets.QTreeWidgetItem()
 				child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
 
@@ -321,11 +354,18 @@ class Vault(QtWidgets.QMainWindow):
 			del suppliedPreviewData
 
 		for preview_data in data:
+			decrypted_preview_data = []
+			for column in preview_data:
+				if type(column) != int:
+					column = enc.decrypt(self.key, column).decode("utf-8")
+				decrypted_preview_data.append(column)
+			
+
 			if x == max_preview_width:
 				x = 0
 				y += 1
 
-			tempPreview = Preview(preview_data, self.user_id)
+			tempPreview = Preview(self.key, decrypted_preview_data, self.user_id)
 			tempPreview.changeMade.connect(self.drawPreviewsExplorer)
 			self.preview_dict[tempPreview.id] = tempPreview
 			self.gridLayout.addWidget(tempPreview, y, x)
@@ -342,7 +382,7 @@ class Vault(QtWidgets.QMainWindow):
 
 
 	def addFolder(self):
-		Dialog = enterFolderDialog()
+		Dialog = enterFolderDialog(self.key)
 		Dialog.exec_()
 
 		try:
@@ -400,7 +440,7 @@ class Vault(QtWidgets.QMainWindow):
 			return
 
 		else:
-			Dialog = enterFolderDialog(folderName=self.Explorer.currentItem().text(0))
+			Dialog = enterFolderDialog(self.key, folderName=self.Explorer.currentItem().text(0))
 			Dialog.exec_()
 			try:
 				folderName = Dialog.text
@@ -430,7 +470,7 @@ class Vault(QtWidgets.QMainWindow):
 
 
 	def addEntry(self):	
-		Dialog = enterDataDialog()
+		Dialog = enterDataDialog(self.key)
 		Dialog.exec_()
 
 		try:
@@ -442,8 +482,11 @@ class Vault(QtWidgets.QMainWindow):
 					INSERT OR REPLACE INTO '{self.user_id}-passwords'
 					VALUES(?,?,?,?,?,?)
 					"""
-		db.c.execute(sql_query, (None, details["url"], details["username"], details["email"], details["password"], details["other"]))
-		db.conn.commit()
+		try:
+			db.c.execute(sql_query, (None, details["url"], details["username"], details["email"], details["password"], details["other"]))
+			db.conn.commit()
+		except TypeError:	# user exited without typing anything
+			return
 
 		path = self.getCurrentItemPath()
 		if path is None:
@@ -469,5 +512,5 @@ class Vault(QtWidgets.QMainWindow):
 if __name__ == "__main__":
 	import sys
 	app = QtWidgets.QApplication(sys.argv)
-	window = Vault(1)
+	window = Vault(1, "sarim786")
 	app.exec_()
