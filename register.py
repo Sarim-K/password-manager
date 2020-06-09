@@ -64,8 +64,8 @@ class Register(QtWidgets.QMainWindow):
 			return		
 
 		# validate for existing account
-		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = '{username}'"
-		retrieved_data = db.c.execute(sql_query)
+		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = ?"
+		retrieved_data = db.c.execute(sql_query, (username,))
 		try:
 			retrieved_data.fetchone()[0]
 			Dialog = dialog.Dialog("Username already registered!", dialogName="Account already exists.")
@@ -83,8 +83,8 @@ class Register(QtWidgets.QMainWindow):
 		db.conn.commit()
 
 		# get user's id
-		sql_query = f"SELECT USER_ID FROM 'user-data' WHERE USERNAME = '{username}'"
-		user_id = db.c.execute(sql_query).fetchone()[0]
+		sql_query = f"SELECT USER_ID FROM 'user-data' WHERE USERNAME = ?"
+		user_id = db.c.execute(sql_query, (username,)).fetchone()[0]
 
 		# create user's passwords table
 		sql_query = f"""
