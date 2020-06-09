@@ -8,13 +8,36 @@ class Preview(QtWidgets.QWidget):
 		uic.loadUi("ui_files/vault/preview.ui", self)
 
 		self._password_row_data = password_row_data
-		self._id = password_row_data[0]
 
 		self.urlLabel.setText(password_row_data[1])
-		self.nameLabel.setText(password_row_data[2])
 
 		self.expandButton = self.findChild(QtWidgets.QPushButton, "expandButton")
 		self.expandButton.clicked.connect(self.expand)
+		self.deleteButton = self.findChild(QtWidgets.QPushButton, "deleteButton")
+		self.deleteButton.clicked.connect(self.remove)
+
+	@property
+	def id(self):
+		return self._password_row_data[0]
+
+	def remove(self):
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{window.user_id}-folder-%' ORDER BY name ASC"
+		folders = db.c.execute(sql_query).fetchall()
+		
+		for folder in folders:	
+			sql_query = f"DELETE FROM '{folder[0]}' WHERE PASSWORD_ID = ?"
+			db.c.execute(sql_query, (self.id,))		# remove it from any folders that exist
+			db.conn.commit()
+
+		sql_query = f"DELETE FROM '{window.user_id}-passwords' WHERE ID = ?"
+		db.c.execute(sql_query, (self.id,))	# remove it from the passwords table
+		db.conn.commit()
+
+		if window.getCurrentItemPath():
+			window.drawFolderPreviews()
+		else:
+			window.drawPreviews()
+		window.drawExplorer()
 
 	def expand(self):
 		Dialog = expandDialog(self._password_row_data)
@@ -43,7 +66,7 @@ class enterFolderDialog(QtWidgets.QDialog):
 		self.setWindowTitle("Enter folder name:")
 
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
-		self.OKButton.clicked.connect(self.saveText)
+		self.OKButton.clicked.connect(self.validateText)
 
 		self.show()
 
@@ -51,9 +74,16 @@ class enterFolderDialog(QtWidgets.QDialog):
 		self._text = self.lineEdit.text()
 		self.close()
 
+	def validateText(self):
+		if "/" in self.lineEdit.text():
+			Dialog = dialog.Dialog("You cannot use the '/' character!", dialogName="Invalid character used.")
+			Dialog.exec_()
+		else:
+			self.saveText()
+
 	@property
 	def text(self):
-		return f"{self._text.replace('/', '')}/"
+		return f"{self._text}/"
 
 
 class enterDataDialog(QtWidgets.QDialog):
@@ -91,17 +121,24 @@ class Vault(QtWidgets.QMainWindow):
 		self._user_id = user_id
 		self.preview_dict = {}
 
-		self.Explorer = self.findChild(QtWidgets.QTreeWidget, "Explorer")
+		self.deleteFolderButton.clicked.connect(self.deleteFolder)
 		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
-
 		self.newFolder.triggered.connect(self.addFolder)
 		self.newEntry.triggered.connect(self.addEntry)
 
 		self.drawPreviews(suppliedPreviewData=False)
 		self.drawExplorer()
+		self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
+
 		self.show()
 
-	def getCurrentItemPath(self):
+
+	@property
+	def user_id(self):
+		return self._user_id
+
+
+	def getCurrentItemPath(self, passwordsEnabled=False):
 		path_array = []
 		final_path = ""
 
@@ -110,8 +147,10 @@ class Vault(QtWidgets.QMainWindow):
 		if item is None:	# if user hasn't selected anything
 			return	
 
-		if item.text(1) != "Folder":
+		if item.text(1) != "Folder" and passwordsEnabled == False:
 			item = self.Explorer.currentItem().parent()	# selects the folder the password is in, rather than the password itself
+		else:
+			pass
 
 		try:
 			while True:
@@ -123,7 +162,7 @@ class Vault(QtWidgets.QMainWindow):
 
 			for subpath in path_array:
 				final_path += subpath	
-			final_path = f"{self._user_id}-folder-{final_path}"
+			final_path = f"{self.user_id}-folder-{final_path}"
 			
 			return final_path
 
@@ -140,7 +179,7 @@ class Vault(QtWidgets.QMainWindow):
 			return
 
 		for password in password_ids:
-			sql_query = f"SELECT * FROM '{self._user_id}-passwords' WHERE ID = {password[0]}"
+			sql_query = f"SELECT * FROM '{self.user_id}-passwords' WHERE ID = {password[0]}"
 			data = db.c.execute(sql_query).fetchone()
 			suppliedPreviewData.append(data)
 
@@ -164,9 +203,8 @@ class Vault(QtWidgets.QMainWindow):
 
 		self.Explorer.clear()
 		self.Explorer.setHeaderLabels(["Name", "Type"])
-		self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
 
-		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self.user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
 		for folder in folders:
@@ -180,7 +218,7 @@ class Vault(QtWidgets.QMainWindow):
 
 			folderArray2.append(folder.strip("/"))
 			for password in password_ids:
-				sql_query = f"SELECT URL FROM '{self._user_id}-passwords' WHERE ID = {password[0]}"
+				sql_query = f"SELECT URL FROM '{self.user_id}-passwords' WHERE ID = {password[0]}"
 				url = db.c.execute(sql_query).fetchone()
 				folderArray2.append(f"{folder}{url[0]}".strip("/"))
 
@@ -196,7 +234,7 @@ class Vault(QtWidgets.QMainWindow):
 			for key, val in dict_tree.items():
 				
 				child = QtWidgets.QTreeWidgetItem()
-				child.setText(0, key.replace(f"{self._user_id}-folder-", ""))
+				child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
 
 				for folder in folders:
 					if key in folder:
@@ -236,7 +274,7 @@ class Vault(QtWidgets.QMainWindow):
 				self.gridLayout.itemAt(i).widget().setParent(None)
 
 		if suppliedPreviewData == False:
-			sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
+			sql_query = f"SELECT * FROM '{self.user_id}-passwords'"
 			data = db.c.execute(sql_query).fetchall()
 		else:
 			data = suppliedPreviewData
@@ -248,7 +286,7 @@ class Vault(QtWidgets.QMainWindow):
 				y += 1
 
 			tempPreview = Preview(preview_data)
-			self.preview_dict[tempPreview._id] = tempPreview
+			self.preview_dict[tempPreview.id] = tempPreview
 			self.gridLayout.addWidget(tempPreview, y, x)
 
 			x += 1
@@ -264,8 +302,8 @@ class Vault(QtWidgets.QMainWindow):
 			return
 
 		path = self.getCurrentItemPath()
-		if path is None or path == f"{self._user_id}-folder-All/":
-			folderName = f"{self._user_id}-folder-{folderName}"
+		if path is None or path == f"{self.user_id}-folder-All/":
+			folderName = f"{self.user_id}-folder-{folderName}"
 		else:
 			folderName = f"{path}{folderName}"
 		
@@ -284,7 +322,29 @@ class Vault(QtWidgets.QMainWindow):
 		Dialog.close()
 
 		self.drawExplorer()
+		if self.getCurrentItemPath():
+			self.drawFolderPreviews()
+		else:
+			self.drawPreviews()
 
+
+	def deleteFolder(self):
+		path = self.getCurrentItemPath()
+		print(path)
+		if path == f"{self.user_id}-folder-All/":
+			Dialog = dialog.Dialog("You cannot delete this folder!", dialogName="Invalid folder.")
+			Dialog.exec_()
+			return
+
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{path}%' ORDER BY name ASC"
+		folders = db.c.execute(sql_query).fetchall()
+
+		for folder in folders:
+			sql_query = f"DROP TABLE '{folder[0]}'"
+			db.c.execute(sql_query)
+			db.conn.commit()
+
+		self.drawExplorer()
 		if self.getCurrentItemPath():
 			self.drawFolderPreviews()
 		else:
@@ -301,7 +361,7 @@ class Vault(QtWidgets.QMainWindow):
 			return
 
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{self._user_id}-passwords'
+					INSERT OR REPLACE INTO '{self.user_id}-passwords'
 					VALUES(?,?,?,?,?,?)
 					"""
 		db.c.execute(sql_query, (None, details["url"], details["username"], details["email"], details["password"], details["other"]))
@@ -309,7 +369,7 @@ class Vault(QtWidgets.QMainWindow):
 
 		path = self.getCurrentItemPath()
 		if path is None:
-			path = f"{self._user_id}-folder-All/"
+			path = f"{self.user_id}-folder-All/"
 
 		sql_query = f"""
 					INSERT OR REPLACE INTO '{path}'
@@ -318,22 +378,19 @@ class Vault(QtWidgets.QMainWindow):
 		db.c.execute(sql_query, (db.c.lastrowid,))
 		db.conn.commit()
 
-		print(db.c.lastrowid)
-
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{self._user_id}-folder-All/'
+					INSERT OR REPLACE INTO '{self.user_id}-folder-All/'
 					VALUES(?)
 					"""
 		db.c.execute(sql_query, (db.c.lastrowid,))
 		db.conn.commit()
 
 		self.drawExplorer()
-
 		if self.getCurrentItemPath():
 			self.drawFolderPreviews()
 		else:
 			self.drawPreviews()	
-
+		
 
 if __name__ == "__main__":
 	import sys
