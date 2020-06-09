@@ -3,25 +3,34 @@ from backend import database_connection as db
 import sqlite3, dialog
 
 class Preview(QtWidgets.QWidget):
-	def __init__(self, password_row_data):
-		super(Preview, self).__init__()
+	changeMade = QtCore.pyqtSignal()
+
+	def __init__(self, password_row_data, user_id):
+		super().__init__()
 		uic.loadUi("ui_files/vault/preview.ui", self)
 
 		self._password_row_data = password_row_data
+		self._user_id = user_id
 
 		self.urlLabel.setText(password_row_data[1])
 
-		self.expandButton = self.findChild(QtWidgets.QPushButton, "expandButton")
 		self.expandButton.clicked.connect(self.expand)
-		self.deleteButton = self.findChild(QtWidgets.QPushButton, "deleteButton")
 		self.deleteButton.clicked.connect(self.remove)
+		self.editButton.clicked.connect(self.edit)
+
+
+	@property
+	def user_id(self):
+		return self._user_id
+
 
 	@property
 	def id(self):
 		return self._password_row_data[0]
 
+
 	def remove(self):
-		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{window.user_id}-folder-%' ORDER BY name ASC"
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self.user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 		
 		for folder in folders:	
@@ -29,24 +38,42 @@ class Preview(QtWidgets.QWidget):
 			db.c.execute(sql_query, (self.id,))		# remove it from any folders that exist
 			db.conn.commit()
 
-		sql_query = f"DELETE FROM '{window.user_id}-passwords' WHERE ID = ?"
+		sql_query = f"DELETE FROM '{self.user_id}-passwords' WHERE ID = ?"
 		db.c.execute(sql_query, (self.id,))	# remove it from the passwords table
 		db.conn.commit()
 
-		if window.getCurrentItemPath():
-			window.drawFolderPreviews()
-		else:
-			window.drawPreviews()
-		window.drawExplorer()
+		self.changeMade.emit()
+
 
 	def expand(self):
 		Dialog = expandDialog(self._password_row_data)
 		Dialog.exec_()
 
 
+	def edit(self):
+		Dialog = enterDataDialog(password_row_data=self._password_row_data)
+		Dialog.exec_()
+
+		details = Dialog.details
+
+		sql_query = f"""
+					UPDATE '{self.user_id}-passwords'
+					SET URL = ?,
+					USERNAME = ?,
+					EMAIL = ?,
+					PASSWORD = ?,
+					OTHER = ?
+					WHERE ID = ?
+					"""
+		db.c.execute(sql_query, (details["url"], details["username"], details["email"], details["password"], details["other"], self.id))
+		db.conn.commit()
+
+		self.changeMade.emit()
+
+
 class expandDialog(QtWidgets.QDialog):
 	def __init__(self, password_row_data):
-		super(expandDialog, self).__init__()
+		super().__init__()
 		uic.loadUi("ui_files/vault/expandDialog.ui", self)
 
 		self.urlLabel.setText(password_row_data[1])
@@ -59,20 +86,24 @@ class expandDialog(QtWidgets.QDialog):
 
 
 class enterFolderDialog(QtWidgets.QDialog):
-	def __init__(self):
-		super(enterFolderDialog, self).__init__()
+	def __init__(self, folderName=""):
+		super().__init__()
 		uic.loadUi("ui_files/vault/enterFolderDialog.ui", self)
 
 		self.setWindowTitle("Enter folder name:")
+
+		self.lineEdit.setText(folderName)
 
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
 		self.OKButton.clicked.connect(self.validateText)
 
 		self.show()
 
+
 	def saveText(self):
 		self._text = self.lineEdit.text()
 		self.close()
+
 
 	def validateText(self):
 		if "/" in self.lineEdit.text():
@@ -81,15 +112,22 @@ class enterFolderDialog(QtWidgets.QDialog):
 		else:
 			self.saveText()
 
+
 	@property
 	def text(self):
 		return f"{self._text}/"
 
 
 class enterDataDialog(QtWidgets.QDialog):
-	def __init__(self):
-		super(enterDataDialog, self).__init__()
+	def __init__(self, password_row_data=["", "", "", "", "", ""]):
+		super().__init__()
 		uic.loadUi("ui_files/vault/enterDataDialog.ui", self)
+
+		self.urlEdit.setText(password_row_data[1])
+		self.usernameEdit.setText(password_row_data[2])
+		self.emailEdit.setText(password_row_data[3])
+		self.passwordEdit.setText(password_row_data[4])
+		self.otherEdit.setText(password_row_data[5])
 
 		self.setWindowTitle("Enter details:")
 
@@ -101,6 +139,7 @@ class enterDataDialog(QtWidgets.QDialog):
 	@property
 	def details(self):
 		return self._data_dict
+
 
 	def saveDetails(self):
 		data_dict = {}
@@ -115,13 +154,14 @@ class enterDataDialog(QtWidgets.QDialog):
 
 class Vault(QtWidgets.QMainWindow):
 	def __init__(self, user_id):
-		super(Vault, self).__init__()
+		super().__init__()
 		uic.loadUi("ui_files/vault/vault.ui", self)
 
 		self._user_id = user_id
 		self.preview_dict = {}
 
 		self.deleteFolderButton.clicked.connect(self.deleteFolder)
+		self.editFolderButton.clicked.connect(self.editFolder)
 		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
 		self.newFolder.triggered.connect(self.addFolder)
 		self.newEntry.triggered.connect(self.addEntry)
@@ -285,11 +325,20 @@ class Vault(QtWidgets.QMainWindow):
 				x = 0
 				y += 1
 
-			tempPreview = Preview(preview_data)
+			tempPreview = Preview(preview_data, self.user_id)
+			tempPreview.changeMade.connect(self.drawPreviewsExplorer)
 			self.preview_dict[tempPreview.id] = tempPreview
 			self.gridLayout.addWidget(tempPreview, y, x)
 
 			x += 1
+
+
+	def drawPreviewsExplorer(self):
+		self.drawExplorer()
+		if self.getCurrentItemPath():
+			self.drawFolderPreviews()
+		else:
+			self.drawPreviews()
 
 
 	def addFolder(self):
@@ -321,17 +370,12 @@ class Vault(QtWidgets.QMainWindow):
 
 		Dialog.close()
 
-		self.drawExplorer()
-		if self.getCurrentItemPath():
-			self.drawFolderPreviews()
-		else:
-			self.drawPreviews()
+		self.drawPreviewsExplorer()
 
 
 	def deleteFolder(self):
 		path = self.getCurrentItemPath()
-		print(path)
-		if path == f"{self.user_id}-folder-All/":
+		if path is None or path == f"{self.user_id}-folder-All/":
 			Dialog = dialog.Dialog("You cannot delete this folder!", dialogName="Invalid folder.")
 			Dialog.exec_()
 			return
@@ -344,14 +388,48 @@ class Vault(QtWidgets.QMainWindow):
 			db.c.execute(sql_query)
 			db.conn.commit()
 
-		self.drawExplorer()
-		if self.getCurrentItemPath():
-			self.drawFolderPreviews()
+		self.drawPreviewsExplorer()
+
+
+	def editFolder(self):
+		final = ""
+		path = self.getCurrentItemPath()
+		if path is None or path == f"{self.user_id}-folder-All/":
+			Dialog = dialog.Dialog("You cannot edit this folder!", dialogName="Invalid folder.")
+			Dialog.exec_()
+			return
+
 		else:
-			self.drawPreviews()
+			Dialog = enterFolderDialog(folderName=self.Explorer.currentItem().text(0))
+			Dialog.exec_()
+			try:
+				folderName = Dialog.text
+			except (UnboundLocalError, AttributeError): #user exited dialog, didn't successfully input
+				return
+
+			newPath = path.split("/")
+			if len(newPath) == 2:	# not a subdirectory
+				newPath = path.split("-")
+				newPath[-1] = folderName
+				for subpath in newPath:
+					final += f"{subpath}-"
+				final = final[:-1]
+
+			else:
+				newPath[-2] = folderName
+				for subpath in newPath:
+					final += f"{subpath}/"
+
+		sql_query = f"""ALTER TABLE '{path}'
+ 					RENAME TO '{final}';
+		  			"""
+		db.c.execute(sql_query)
+		db.conn.commit()
+
+		self.drawPreviewsExplorer()
 
 
-	def addEntry(self):
+	def addEntry(self):	
 		Dialog = enterDataDialog()
 		Dialog.exec_()
 
@@ -385,11 +463,7 @@ class Vault(QtWidgets.QMainWindow):
 		db.c.execute(sql_query, (db.c.lastrowid,))
 		db.conn.commit()
 
-		self.drawExplorer()
-		if self.getCurrentItemPath():
-			self.drawFolderPreviews()
-		else:
-			self.drawPreviews()	
+		self.drawPreviewsExplorer()
 		
 
 if __name__ == "__main__":
