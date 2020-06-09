@@ -37,8 +37,8 @@ class Login(QtWidgets.QMainWindow):
 		username = self.usernameEdit.text()
 		password = self.passwordEdit.text()
 
-		sql_query = f"SELECT * FROM 'user-data' WHERE USERNAME = '{username}'"
-		retrieved_data = db.c.execute(sql_query).fetchone()
+		sql_query = f"SELECT * FROM 'user-data' WHERE USERNAME = ?"
+		retrieved_data = db.c.execute(sql_query, (username,)).fetchone()
 
 		try:
 			user_id, retrieved_password = retrieved_data[0], retrieved_data[2]
