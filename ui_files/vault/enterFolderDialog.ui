@@ -33,7 +33,11 @@
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <widget class="QLineEdit" name="lineEdit"/>
+    <widget class="QLineEdit" name="lineEdit">
+     <property name="placeholderText">
+      <string>Folder name</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QPushButton" name="OKButton">
