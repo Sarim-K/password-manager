@@ -7,7 +7,7 @@ import login, dialog
 
 class Register(QtWidgets.QMainWindow):
 	def __init__(self):
-		super(Register, self).__init__()
+		super().__init__()
 		uic.loadUi("ui_files/register/register.ui", self)
 		
 		self._passwordHidden = True
