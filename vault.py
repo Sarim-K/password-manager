@@ -14,7 +14,7 @@ class Preview(QtWidgets.QWidget):
 		self._user_id = user_id
 		self._key = key
 
-		self.urlLabel.setText(password_row_data[1])
+		self.titleLabel.setText(password_row_data[1])
 
 		self.expandButton.clicked.connect(self.expand)
 		self.deleteButton.clicked.connect(self.remove)
@@ -57,14 +57,15 @@ class Preview(QtWidgets.QWidget):
 
 
 	def edit(self):
-		Dialog = enterDataDialog(self.key, password_row_data=self._password_row_data)
+		Dialog = enterDataDialog(self.user_id, self.key, password_row_data=self._password_row_data)
 		Dialog.exec_()
 
 		details = Dialog.details
 
 		sql_query = f"""
 					UPDATE '{self.user_id}-passwords'
-					SET URL = ?,
+					SET TITLE = ?,
+					URL = ?,
 					USERNAME = ?,
 					EMAIL = ?,
 					PASSWORD = ?,
@@ -72,7 +73,7 @@ class Preview(QtWidgets.QWidget):
 					WHERE ID = ?
 					"""
 		try:
-			db.c.execute(sql_query, (details["url"], details["username"], details["email"], details["password"], details["other"], self.id))
+			db.c.execute(sql_query, (details["title"], details["url"], details["username"], details["email"], details["password"], details["other"], self.id))
 			db.conn.commit()
 		except TypeError:	# user exited dialog without entering anything
 			return
@@ -94,11 +95,12 @@ class expandDialog(QtWidgets.QDialog):
 		return self._key
 
 	def displayDetails(self, password_row_data):
-		self.urlLabel.setText(password_row_data[1])
-		self.usernameLabel.setText(password_row_data[2])
-		self.emailLabel.setText(password_row_data[3])
-		self.passwordLabel.setText(password_row_data[4])
-		self.otherLabel.setText(password_row_data[5])
+		self.titleLabel.setText(password_row_data[1])
+		self.urlLabel.setText(password_row_data[2])
+		self.usernameLabel.setText(password_row_data[3])
+		self.emailLabel.setText(password_row_data[4])
+		self.passwordLabel.setText(password_row_data[5])
+		self.otherLabel.setText(password_row_data[6])
 
 		self.show()
 
@@ -136,22 +138,25 @@ class enterFolderDialog(QtWidgets.QDialog):
 
 
 class enterDataDialog(QtWidgets.QDialog):
-	def __init__(self, key, password_row_data=["", "", "", "", "", ""]):
+	def __init__(self, user_id, key, password_row_data=["", "", "", "", "", "", ""]):
 		super().__init__()
 		uic.loadUi("ui_files/vault/enterDataDialog.ui", self)
 
-		self.urlEdit.setText(password_row_data[1])
-		self.usernameEdit.setText(password_row_data[2])
-		self.emailEdit.setText(password_row_data[3])
-		self.passwordEdit.setText(password_row_data[4])
-		self.otherEdit.setText(password_row_data[5])
+		self.titleEdit.setText(password_row_data[1])
+		self.urlEdit.setText(password_row_data[2])
+		self.usernameEdit.setText(password_row_data[3])
+		self.emailEdit.setText(password_row_data[4])
+		self.passwordEdit.setText(password_row_data[5])
+		self.otherEdit.setText(password_row_data[6])
 
 		self.setWindowTitle("Enter details:")
 
+		self.title_cache = password_row_data[1]
+		self._user_id = user_id
 		self._key = key
 
 		self.OKButton = self.findChild(QtWidgets.QPushButton, "OKButton")
-		self.OKButton.clicked.connect(self.saveDetails)
+		self.OKButton.clicked.connect(self.validateText)
 
 		self.show()
 
@@ -167,8 +172,38 @@ class enterDataDialog(QtWidgets.QDialog):
 		except AttributeError:	# user exited dialog without entering anything
 			return
 
+	def validateText(self):
+		if self.titleEdit.text() == "":
+			Dialog = dialog.Dialog("Title cannot be Empty!", dialogName="Empty field.")
+			Dialog.exec_()
+			return
+	
+		elif self.title_cache == self.titleEdit.text():	# title hasn't changed - no point in validating it
+			self.saveDetails()
+			return
+
+		if "/" in self.titleEdit.text():	# validate for '/' character
+			Dialog = dialog.Dialog("You cannot use the '/' character in your title!", dialogName="Invalid character used.")
+			Dialog.exec_()
+			return
+		
+		sql_query = f"SELECT TITLE FROM '{self._user_id}-passwords'"
+		tempTitles = db.c.execute(sql_query).fetchall()
+
+		for title in tempTitles:
+			decryptedTitle = enc.decrypt(self.key, title[0])
+			if decryptedTitle.decode("utf-8") == self.titleEdit.text():
+
+					Dialog = dialog.Dialog("This title has already been used!", dialogName="Existing title.")
+					Dialog.exec_()
+					return
+			
+		self.saveDetails()
+
 	def saveDetails(self):
 		data_dict = {}
+		
+		data_dict["title"] = enc.encrypt(self.key, self.titleEdit.text())
 		data_dict["url"] = enc.encrypt(self.key, self.urlEdit.text())
 		data_dict["username"] = enc.encrypt(self.key, self.usernameEdit.text())
 		data_dict["email"] = enc.encrypt(self.key, self.emailEdit.text())
@@ -178,7 +213,7 @@ class enterDataDialog(QtWidgets.QDialog):
 		self.close()
 
 
-class Vault(QtWidgets.QMainWindow):
+class Vault(QtWidgets.QMainWindow):	
 	def __init__(self, user_id, password_given):
 		super().__init__()
 		uic.loadUi("ui_files/vault/vault.ui", self)
@@ -268,7 +303,7 @@ class Vault(QtWidgets.QMainWindow):
 		self.append_to_tree(node[c[0]], c[1:])	
 
 
-	def drawExplorer(self):
+	def drawExplorer(self):	
 		folderArray = []
 		folderArray2 = []
 		root = {}
@@ -290,7 +325,7 @@ class Vault(QtWidgets.QMainWindow):
 
 			folderArray2.append(folder.strip("/"))
 			for password in password_ids:
-				sql_query = f"SELECT URL FROM '{self.user_id}-passwords' WHERE ID = ?"
+				sql_query = f"SELECT TITLE FROM '{self.user_id}-passwords' WHERE ID = ?"
 				url = db.c.execute(sql_query, (password[0],)).fetchone()
 				
 				url = enc.decrypt(self.key, url[0]).decode("utf-8")
@@ -308,7 +343,7 @@ class Vault(QtWidgets.QMainWindow):
 			for key, val in dict_tree.items():		
 				child = QtWidgets.QTreeWidgetItem()
 				child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
-
+	
 				for folder in folders:
 					if key in folder:
 						Type = "Folder"
@@ -319,24 +354,6 @@ class Vault(QtWidgets.QMainWindow):
 				child.setText(1, Type)
 				explorer_widget.addChild(child)
 				self.fill_explorer(child, val, folders)
-				
-
-		elif type(dict_tree) is list:
-			for val in dict_tree:
-				child = QtWidgets.QTreeWidgetItem()
-				explorer_widget.addChild(child)
-			if type(val) is dict:      
-				child.setText(0, '[dict]')
-				self.fill_item(child, val)
-			elif type(val) is list:
-				child.setText(0, '[list]')
-				self.fill_item(child, val)
-			else:
-				child.setText(0, val)
-		else:
-			child = QTreeWidgetItem()
-			child.setText(0, dict_tree)
-			explorer_widget.addChild(child)
 
 
 	def drawPreviews(self, suppliedPreviewData=False):
@@ -447,7 +464,7 @@ class Vault(QtWidgets.QMainWindow):
 			except (UnboundLocalError, AttributeError): #user exited dialog, didn't successfully input
 				return
 
-			newPath = path.split("/")
+			newPath = path.strip("http://").strip("https://").split("/")
 			if len(newPath) == 2:	# not a subdirectory
 				newPath = path.split("-")
 				newPath[-1] = folderName
@@ -470,7 +487,7 @@ class Vault(QtWidgets.QMainWindow):
 
 
 	def addEntry(self):	
-		Dialog = enterDataDialog(self.key)
+		Dialog = enterDataDialog(self.user_id, self.key)
 		Dialog.exec_()
 
 		try:
@@ -480,10 +497,10 @@ class Vault(QtWidgets.QMainWindow):
 
 		sql_query = f"""
 					INSERT OR REPLACE INTO '{self.user_id}-passwords'
-					VALUES(?,?,?,?,?,?)
+					VALUES(?,?,?,?,?,?,?)
 					"""
 		try:
-			db.c.execute(sql_query, (None, details["url"], details["username"], details["email"], details["password"], details["other"]))
+			db.c.execute(sql_query, (None, details["title"], details["url"], details["username"], details["email"], details["password"], details["other"]))
 			db.conn.commit()
 		except TypeError:	# user exited without typing anything
 			return
