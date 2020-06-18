@@ -15,6 +15,13 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QLineEdit" name="titleEdit">
+     <property name="placeholderText">
+      <string>Title</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLineEdit" name="urlEdit">
      <property name="placeholderText">
       <string>URL</string>
