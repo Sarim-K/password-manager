@@ -90,6 +90,7 @@ class Register(QtWidgets.QMainWindow):
 		sql_query = f"""
 		CREATE TABLE '{user_id}-passwords' (
 		ID INTEGER PRIMARY KEY,
+		TITLE		TEXT	(1, 100),
 		URL    		TEXT    (1, 100),
 		USERNAME    TEXT    (1, 100),
 		EMAIL   	TEXT    (1, 100),
