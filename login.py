@@ -52,7 +52,7 @@ class Login(QtWidgets.QMainWindow):
 			return
 
 		try:
-			self.window = vault.Vault(user_id)
+			self.window = vault.Vault(user_id, retrieved_password)
 			self.close()
 		except Exception as e:
 			print(e)
