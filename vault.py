@@ -1,7 +1,9 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
-import sqlite3, dialog
+import dialog
+import sqlite3
+import random
 
 class Preview(QtWidgets.QWidget):
 	changeMade = QtCore.pyqtSignal()
@@ -52,7 +54,7 @@ class Preview(QtWidgets.QWidget):
 
 
 	def expand(self):
-		Dialog = expandDialog(self.key, self._password_row_data)
+		Dialog = expandDialog(self._password_row_data)
 		Dialog.exec_()
 
 
@@ -82,17 +84,11 @@ class Preview(QtWidgets.QWidget):
 
 
 class expandDialog(QtWidgets.QDialog):
-	def __init__(self, key, password_row_data):
+	def __init__(self, password_row_data):
 		super().__init__()
 		uic.loadUi("ui_files/vault/expandDialog.ui", self)
-		self._key = key
 
 		self.displayDetails(password_row_data)
-
-
-	@property
-	def key(self):
-		return self._key
 
 	def displayDetails(self, password_row_data):
 		self.titleLabel.setText(password_row_data[1])
@@ -213,6 +209,42 @@ class enterDataDialog(QtWidgets.QDialog):
 		self.close()
 
 
+class passwordGenerator(QtWidgets.QDialog):
+	def __init__(self):
+		super().__init__()
+		uic.loadUi("ui_files/vault/generatorDialog.ui", self)
+
+		self.setWindowTitle("Password Generator")
+
+		self.onlyInt = QtGui.QIntValidator()
+		self.lengthEdit.setValidator(self.onlyInt)
+
+		self.lengthSlider.setMinimum(1)
+		self.lengthSlider.setMaximum(50)
+		
+		self.lengthSlider.valueChanged.connect(self.setLengthEdit)
+		self.lengthEdit.textChanged.connect(self.setLengthSlider)
+		self.generateButton.clicked.connect(self.generatePassword)
+
+		self.show()
+
+
+	def setLengthEdit(self):
+		self.lengthEdit.setText(str(self.lengthSlider.value()))
+
+	def setLengthSlider(self):
+		try:
+			self.lengthSlider.setValue(int(self.lengthEdit.text()))
+		except ValueError:
+			self.lengthEdit.setText(str(0))
+	
+	def generatePassword(self):
+		generated = ""
+		for _ in range(self.lengthSlider.value()):
+			generated += random.choice("""0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[]^_`{|}~""")
+		self.passwordEdit.setText(generated)
+
+
 class Vault(QtWidgets.QMainWindow):	
 	def __init__(self, user_id, password_given):
 		super().__init__()
@@ -227,6 +259,7 @@ class Vault(QtWidgets.QMainWindow):
 		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
 		self.newFolder.triggered.connect(self.addFolder)
 		self.newEntry.triggered.connect(self.addEntry)
+		self.newPassword.triggered.connect(self.generatePassword)
 
 		self.drawPreviews(suppliedPreviewData=False)
 		self.drawExplorer()
@@ -525,6 +558,10 @@ class Vault(QtWidgets.QMainWindow):
 
 		self.drawPreviewsExplorer()
 		
+	def generatePassword(self):
+		Dialog = passwordGenerator()
+		Dialog.exec_()
+		return
 
 if __name__ == "__main__":
 	import sys
