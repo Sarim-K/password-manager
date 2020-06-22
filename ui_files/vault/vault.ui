@@ -178,6 +178,7 @@
     </property>
     <addaction name="newEntry"/>
     <addaction name="newFolder"/>
+    <addaction name="newPassword"/>
    </widget>
    <addaction name="menuNew"/>
   </widget>
@@ -204,6 +205,11 @@
   <action name="removeAny">
    <property name="text">
     <string>Remove</string>
+   </property>
+  </action>
+  <action name="newPassword">
+   <property name="text">
+    <string>New Password</string>
    </property>
   </action>
  </widget>
