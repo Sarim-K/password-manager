@@ -174,15 +174,20 @@ class enterDataDialog(QtWidgets.QDialog):
 			Dialog.exec_()
 			return
 	
-		elif self.title_cache == self.titleEdit.text():	# title hasn't changed - no point in validating it
+		elif self.title_cache == self.titleEdit.text():	# title hasn't changed - no point in validating it further
 			self.saveDetails()
 			return
 
-		if "/" in self.titleEdit.text():	# validate for '/' character
+		elif "/" in self.titleEdit.text():	# validate for '/' character
 			Dialog = dialog.Dialog("You cannot use the '/' character in your title!", dialogName="Invalid character used.")
 			Dialog.exec_()
 			return
 		
+		elif self.titleEdit.text().startswith(f"{self._user_id}-folder-"):
+			Dialog = dialog.Dialog("Invalid folder name.", dialogName="Invalid folder name.")
+			Dialog.exec_()
+			return
+
 		sql_query = f"SELECT TITLE FROM '{self._user_id}-passwords'"
 		tempTitles = db.c.execute(sql_query).fetchall()
 
@@ -256,14 +261,20 @@ class Vault(QtWidgets.QMainWindow):
 
 		self.deleteFolderButton.clicked.connect(self.deleteFolder)
 		self.editFolderButton.clicked.connect(self.editFolder)
+		self.OKButton.clicked.connect(self.search)
 		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
 		self.newFolder.triggered.connect(self.addFolder)
 		self.newEntry.triggered.connect(self.addEntry)
 		self.newPassword.triggered.connect(self.generatePassword)
 
-		self.drawPreviews(suppliedPreviewData=False)
+		self.enterKey = QtWidgets.QShortcut(QtGui.QKeySequence("Return"), self)	# return is enter for some reason
+		self.enterKey.activated.connect(self.search)
+
+		self.drawPreviews()
 		self.drawExplorer()
-		self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
+		# self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
+		# self.Explorer.itemAt(0, 0).setExpanded(0)
+
 
 		self.show()
 
@@ -371,21 +382,22 @@ class Vault(QtWidgets.QMainWindow):
 		self.Explorer.expandAll()
 
 
-	def fill_explorer(self, explorer_widget, dict_tree, folders):
+	def fill_explorer(self, Explorer, dict_tree, folders):
 		if type(dict_tree) is dict:
 			for key, val in dict_tree.items():		
 				child = QtWidgets.QTreeWidgetItem()
 				child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
 	
 				for folder in folders:
-					if key in folder:
+					if key in folder and key.startswith(f"{self.user_id}-folder-"):
 						Type = "Folder"
 						break
 					else:
 						Type = "Password"
 
 				child.setText(1, Type)
-				explorer_widget.addChild(child)
+
+				Explorer.addChild(child)
 				self.fill_explorer(child, val, folders)
 
 
@@ -429,6 +441,27 @@ class Vault(QtWidgets.QMainWindow):
 			self.drawFolderPreviews()
 		else:
 			self.drawPreviews()
+
+
+	def search(self):
+		results = []
+		decrypted_data = []
+		sql_query = f"SELECT * FROM '{self.user_id}-passwords'"
+		data = db.c.execute(sql_query).fetchall()
+
+		for row in data:
+			temp_array = []
+			for cell in row:
+				try:
+					decrypted_cell = enc.decrypt(self.key, cell).decode("utf-8")
+					if decrypted_cell.startswith(self.searchBar.text()):
+						results.append(row)
+						break			
+
+				except TypeError:	# will be thrown for the id, as id isn't encrypted
+					pass
+	
+		self.drawPreviews(suppliedPreviewData=results)
 
 
 	def addFolder(self):
@@ -557,11 +590,13 @@ class Vault(QtWidgets.QMainWindow):
 		db.conn.commit()
 
 		self.drawPreviewsExplorer()
-		
+
+
 	def generatePassword(self):
 		Dialog = passwordGenerator()
 		Dialog.exec_()
 		return
+
 
 if __name__ == "__main__":
 	import sys
