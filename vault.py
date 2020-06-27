@@ -12,9 +12,11 @@ class Preview(QtWidgets.QWidget):
 		super().__init__()
 		uic.loadUi("ui_files/vault/preview.ui", self)
 
-		self._password_row_data = password_row_data
 		self._user_id = user_id
 		self._key = key
+
+		self._password_row_data = password_row_data
+		self._password_row_data[1] = self._password_row_data[1].replace(f"{self.user_id}-password-", "")
 
 		self.titleLabel.setText(password_row_data[1])
 
@@ -106,6 +108,8 @@ class enterFolderDialog(QtWidgets.QDialog):
 		super().__init__()
 		uic.loadUi("ui_files/vault/enterFolderDialog.ui", self)
 
+		self._cache = folderName
+
 		self.setWindowTitle("Enter folder name:")
 		self.lineEdit.setText(folderName)
 
@@ -117,13 +121,23 @@ class enterFolderDialog(QtWidgets.QDialog):
 
 	def saveText(self):
 		self._text = self.lineEdit.text()
+		print(self._text)
 		self.close()
 
 
 	def validateText(self):
-		if "/" in self.lineEdit.text():
+		if self.lineEdit.text() == "":
+			Dialog = dialog.Dialog("You cannot have an blank folder name!", dialogName="Blank folder name.")
+			Dialog.exec_()
+			self.close()
+
+		elif self.lineEdit.text() == self._cache:
+			self.close()
+
+		elif "/" in self.lineEdit.text():
 			Dialog = dialog.Dialog("You cannot use the '/' character!", dialogName="Invalid character used.")
 			Dialog.exec_()
+			self.close()
 		else:
 			self.saveText()
 
@@ -168,6 +182,10 @@ class enterDataDialog(QtWidgets.QDialog):
 		except AttributeError:	# user exited dialog without entering anything
 			return
 
+	@property
+	def user_id(self):
+		return self._user_id
+
 	def validateText(self):
 		if self.titleEdit.text() == "":
 			Dialog = dialog.Dialog("Title cannot be Empty!", dialogName="Empty field.")
@@ -194,17 +212,16 @@ class enterDataDialog(QtWidgets.QDialog):
 		for title in tempTitles:
 			decryptedTitle = enc.decrypt(self.key, title[0])
 			if decryptedTitle.decode("utf-8") == self.titleEdit.text():
-
-					Dialog = dialog.Dialog("This title has already been used!", dialogName="Existing title.")
-					Dialog.exec_()
-					return
+				Dialog = dialog.Dialog("This title has already been used!", dialogName="Existing title.")
+				Dialog.exec_()
+				return
 			
 		self.saveDetails()
 
 	def saveDetails(self):
 		data_dict = {}
 		
-		data_dict["title"] = enc.encrypt(self.key, self.titleEdit.text())
+		data_dict["title"] = enc.encrypt(self.key, f"{self.user_id}-password-{self.titleEdit.text()}")
 		data_dict["url"] = enc.encrypt(self.key, self.urlEdit.text())
 		data_dict["username"] = enc.encrypt(self.key, self.usernameEdit.text())
 		data_dict["email"] = enc.encrypt(self.key, self.emailEdit.text())
@@ -271,7 +288,7 @@ class Vault(QtWidgets.QMainWindow):
 		self.enterKey.activated.connect(self.search)
 
 		self.drawPreviews()
-		self.drawExplorer()
+		self.prepareExplorerData()
 		# self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
 		# self.Explorer.itemAt(0, 0).setExpanded(0)
 
@@ -347,7 +364,7 @@ class Vault(QtWidgets.QMainWindow):
 		self.append_to_tree(node[c[0]], c[1:])	
 
 
-	def drawExplorer(self):	
+	def prepareExplorerData(self):	
 		folderArray = []
 		folderArray2 = []
 		root = {}
@@ -378,27 +395,29 @@ class Vault(QtWidgets.QMainWindow):
 		for path in folderArray2:
 			self.append_to_tree(root, path.split('/'))
 
-		self.fill_explorer(self.Explorer.invisibleRootItem(), root, folders)
+		self.drawExplorer(self.Explorer.invisibleRootItem(), root, folders)
 		self.Explorer.expandAll()
 
 
-	def fill_explorer(self, Explorer, dict_tree, folders):
+	def drawExplorer(self, Explorer, dict_tree, folders):
 		if type(dict_tree) is dict:
 			for key, val in dict_tree.items():		
 				child = QtWidgets.QTreeWidgetItem()
-				child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
-	
+
 				for folder in folders:
-					if key in folder and key.startswith(f"{self.user_id}-folder-"):
-						Type = "Folder"
+					if key.startswith(f"{self.user_id}-password-"):
+						Type = "Password"
+						child.setText(0, key.replace(f"{self.user_id}-password-", ""))
 						break
 					else:
-						Type = "Password"
+						Type = "Folder"
+						child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
+						break
 
 				child.setText(1, Type)
 
 				Explorer.addChild(child)
-				self.fill_explorer(child, val, folders)
+				self.drawExplorer(child, val, folders)
 
 
 	def drawPreviews(self, suppliedPreviewData=False):
@@ -436,7 +455,7 @@ class Vault(QtWidgets.QMainWindow):
 
 
 	def drawPreviewsExplorer(self):
-		self.drawExplorer()
+		self.prepareExplorerData()
 		if self.getCurrentItemPath():
 			self.drawFolderPreviews()
 		else:
@@ -454,7 +473,7 @@ class Vault(QtWidgets.QMainWindow):
 			for cell in row:
 				try:
 					decrypted_cell = enc.decrypt(self.key, cell).decode("utf-8")
-					if decrypted_cell.startswith(self.searchBar.text()):
+					if decrypted_cell in self.searchBar.text():
 						results.append(row)
 						break			
 
@@ -530,7 +549,7 @@ class Vault(QtWidgets.QMainWindow):
 			except (UnboundLocalError, AttributeError): #user exited dialog, didn't successfully input
 				return
 
-			newPath = path.strip("http://").strip("https://").split("/")
+			newPath = path.split("/")
 			if len(newPath) == 2:	# not a subdirectory
 				newPath = path.split("-")
 				newPath[-1] = folderName
@@ -539,7 +558,7 @@ class Vault(QtWidgets.QMainWindow):
 				final = final[:-1]
 
 			else:
-				newPath[-2] = folderName
+				newPath[-1] = folderName
 				for subpath in newPath:
 					final += f"{subpath}/"
 
