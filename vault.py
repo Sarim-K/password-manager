@@ -473,13 +473,12 @@ class Vault(QtWidgets.QMainWindow):
 			for cell in row:
 				try:
 					decrypted_cell = enc.decrypt(self.key, cell).decode("utf-8")
-					if decrypted_cell in self.searchBar.text():
+					if self.searchBar.text() in decrypted_cell:
 						results.append(row)
 						break			
-
 				except TypeError:	# will be thrown for the id, as id isn't encrypted
 					pass
-	
+		
 		self.drawPreviews(suppliedPreviewData=results)
 
 
