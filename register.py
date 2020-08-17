@@ -2,24 +2,20 @@ from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 import sqlite3
-import login, dialog
+import login, dialog, importacct
 
 
 class Register(QtWidgets.QMainWindow):
 	def __init__(self):
 		super().__init__()
 		uic.loadUi("ui_files/register/register.ui", self)
-		
+
 		self._passwordHidden = True
 
-		self.showPassButton = self.findChild(QtWidgets.QPushButton, "showPassButton") # Find the button
 		self.showPassButton.clicked.connect(self.unhidePassword)
-
-		self.submitButton = self.findChild(QtWidgets.QPushButton, "submitButton") # Find the button
 		self.submitButton.clicked.connect(self.validateInputs)
-
-		self.goToLoginButton = self.findChild(QtWidgets.QPushButton, "goToLoginButton") # Find the button
 		self.goToLoginButton.clicked.connect(self.goToLogin)
+		self.goToImportButton.clicked.connect(importacct.import_acct)
 
 		self.show()
 
@@ -39,7 +35,7 @@ class Register(QtWidgets.QMainWindow):
 		username = self.usernameEdit.text()
 		password = self.passwordEdit.text()
 		passwordRetype = self.passwordRetypeEdit.text()
-		
+
 		# validate for username length
 		if len(username) <5 or len(username) > 30:
 			Dialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Incorrect username.")
@@ -61,7 +57,7 @@ class Register(QtWidgets.QMainWindow):
 			Dialog.exec_()
 			self.passwordEdit.setText("")
 			self.passwordRetypeEdit.setText("")
-			return		
+			return
 
 		# validate for existing account
 		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = ?"
@@ -77,9 +73,9 @@ class Register(QtWidgets.QMainWindow):
 		# insert username & password into database
 		sql_query = f"""
 		INSERT OR REPLACE INTO 'user-data'
-		VALUES(?, ?,?)
+		VALUES(?, ?, ?, ?)
 		"""
-		db.c.execute(sql_query, (None, username, password))
+		db.c.execute(sql_query, (None, username, password, 0))
 		db.conn.commit()
 
 		# get user's id

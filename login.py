@@ -2,24 +2,20 @@ from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 import sqlite3
-import register, dialog, vault
+import register, dialog, vault, importacct
 
 
 class Login(QtWidgets.QMainWindow):
 	def __init__(self):
 		super().__init__()
 		uic.loadUi("ui_files/login/login.ui", self)
-		
+
 		self._passwordHidden = True
 
-		self.showPassButton = self.findChild(QtWidgets.QPushButton, "showPassButton") # Find the button
 		self.showPassButton.clicked.connect(self.unhidePassword)
-
-		self.submitButton = self.findChild(QtWidgets.QPushButton, "submitButton") # Find the button
 		self.submitButton.clicked.connect(self.validateInputs)
-
-		self.goToRegisterButton = self.findChild(QtWidgets.QPushButton, "goToRegisterButton") # Find the button
 		self.goToRegisterButton.clicked.connect(self.goToRegister)
+		self.goToImportButton.clicked.connect(importacct.import_acct)
 
 		self.show()
 
@@ -51,12 +47,18 @@ class Login(QtWidgets.QMainWindow):
 			Dialog.exec_()
 			return
 
+
 		try:
-			self.window = vault.Vault(user_id, retrieved_password)
+			self.window = vault.Vault(user_id, password)
 			self.close()
 		except Exception as e:
-			print(e)
+			traceback.print_exc()
 
 	def goToRegister(self):
 		self.window = register.Register()
 		self.close()
+
+	def goToImport(self):
+
+		dialog = importacct.Import()
+		dialog.exec_()
