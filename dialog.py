@@ -6,11 +6,9 @@ class Dialog(QtWidgets.QDialog):
 		self._errorMessage = errorMessage
 		uic.loadUi("ui_files/other/defaultDialog.ui", self)
 
-		self.OK = self.findChild(QtWidgets.QDialogButtonBox, "buttonBox")
 		self.OK.clicked.connect(self.close)
 
 		self.setWindowTitle(dialogName)
 		self.label.setText(self._errorMessage)
 
 		self.show()
-
