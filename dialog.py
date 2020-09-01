@@ -1,6 +1,7 @@
 # external libraries
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
+
 class Dialog(QtWidgets.QDialog):
 	"""This class is a generic dialog, mostly used for error messages and other quick pop ups."""
 	def __init__(self, errorMessage, dialogName=""):

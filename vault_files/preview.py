@@ -10,6 +10,7 @@ from backend import encryption as enc
 from vault_files.enterdatadialog import *
 from vault_files.expanddialog import *
 
+
 class Preview(QtWidgets.QWidget):
 	"""This class is used to display a small summary of a password entry; displayed in a grid on the right side of the vault."""
 	changeMade = QtCore.pyqtSignal()

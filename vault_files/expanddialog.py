@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
 
+
 class expandDialog(QtWidgets.QDialog):
 	"""This class is a dialog used to display a read-only version of a password entry."""
 	def __init__(self, password_row_data):

@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
 
+
 class enterDataDialog(QtWidgets.QDialog):
 	"""This class is a dialog used when the user wants to create / edit a password entry."""
 	def __init__(self, user_id, key, password_row_data=["", "", "", "", "", "", ""]):

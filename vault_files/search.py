@@ -2,6 +2,7 @@
 from backend import database_connection as db
 from backend import encryption as enc
 
+
 def get_user_passwords(user_id):
 	sql_query = f"SELECT * FROM '{user_id}-passwords'"
 	data = db.c.execute(sql_query).fetchall()
