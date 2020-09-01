@@ -1,7 +1,12 @@
+# standard libraries
+import sqlite3
+
+# external libraries
 from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
+# local imports
 from backend import database_connection as db
-import sqlite3
 import register, dialog, vault, importacct
 
 

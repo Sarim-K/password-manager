@@ -1,9 +1,15 @@
 if __name__ == "__main__":
+	# standard libaries
 	import sys
 	import sqlite3
+
+	# external libaries
 	from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
+	# local imports
 	from backend import database_connection as db
 	import login, register
+
 
 	sql_query = """
 	CREATE TABLE IF NOT EXISTS 'user-data' (

@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
 
+
 class enterFolderDialog(QtWidgets.QDialog):
 	"""This class is a dialog used to create / edit a folder."""
 	def __init__(self, key, folderName=""):

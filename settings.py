@@ -1,7 +1,12 @@
-from backend import database_connection as db
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
-import dialog
+# standard libaries
 import json
+
+# external libaries
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
+# local imports
+from backend import database_connection as db
+import dialog
 
 
 class Settings(QtWidgets.QMainWindow):
