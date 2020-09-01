@@ -17,6 +17,7 @@ import dialog, settings, importacct
 
 
 class Vault(QtWidgets.QMainWindow):
+	"""This class pulls from ui_files/vault/vault.ui for it's UI elements, and is the MainWindow once logged in."""
 	def __init__(self, user_id, password_given):
 		super().__init__()
 		uic.loadUi("ui_files/vault/vault.ui", self)
@@ -37,15 +38,7 @@ class Vault(QtWidgets.QMainWindow):
 		self.enterKey = QtWidgets.QShortcut(QtGui.QKeySequence("Return"), self)	# return is enter for some reason
 		self.enterKey.activated.connect(self.search)
 
-		_imported = importacct.check_if_imported(user_id)
-		if _imported:
-			_folder_name = importacct.get_a_folder_name(user_id)
-			_passwords = importacct.get_passwords(user_id)
-			_old_user_id_length = importacct.get_old_user_id_length(_folder_name)
-			_passwords = importacct.decrypt_and_replace_titles(_passwords, self._key, user_id, _old_user_id_length)
-			_passwords = importacct.re_encrypt_titles(_passwords, self._key)
-			importacct.replace_titles_in_db(_passwords, user_id)
-			importacct.set_not_imported(user_id)
+		_later_import_object = importacct.LaterImportAccount(self._user_id, self._key)
 
 		self.drawPreviews()
 		self.prepareExplorerData()

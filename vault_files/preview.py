@@ -11,8 +11,8 @@ from vault_files.enterdatadialog import *
 from vault_files.expanddialog import *
 
 class Preview(QtWidgets.QWidget):
+	"""This class is used to display a small summary of a password entry; displayed in a grid on the right side of the vault."""
 	changeMade = QtCore.pyqtSignal()
-
 	def __init__(self, key, password_row_data, user_id):
 		super().__init__()
 		uic.loadUi("ui_files/vault/preview.ui", self)

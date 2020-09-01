@@ -33,9 +33,17 @@ def matching_word(search_term, title):
 		score += title.count(search_term) * 5
 
 def same_order(search_term, title):
-#	score = 0
-#	for count in _:
-	pass
+	passed = False
+	count = 0
+	search_term = list(search_term)
+	for character in title:
+		if character == search_term[count]:
+			count += 1
+			passed = True
+		else:
+			return passed
+		return passed
+
 
 def search(search_term, user_id, key):
 	final = []

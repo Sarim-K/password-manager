@@ -3,7 +3,7 @@ if __name__ == "__main__":
 	import sqlite3
 	from PyQt5 import QtCore, QtGui, QtWidgets, uic
 	from backend import database_connection as db
-	import login, register, dialog, vault, settings, importacct
+	import login, register
 
 	sql_query = """
 	CREATE TABLE IF NOT EXISTS 'user-data' (

@@ -5,6 +5,7 @@ import json
 
 
 class Settings(QtWidgets.QMainWindow):
+	"""This class pulls from ui_files/settings/settings.ui for it's UI elements, and is a MainWindow."""
 	export_clicked = QtCore.pyqtSignal()
 	def __init__(self, user_id, key):
 		super().__init__()
@@ -20,6 +21,7 @@ class Settings(QtWidgets.QMainWindow):
 
 
 class Export(QtWidgets.QWidget):
+	"""This class pulls from ui_files/settings/export.ui for it's UI elements, and is a widget within the Settings MainWindow."""
 	def __init__(self, user_id, key):
 		super().__init__()
 		uic.loadUi("ui_files/settings/export.ui", self)

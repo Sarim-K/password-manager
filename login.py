@@ -6,6 +6,7 @@ import register, dialog, vault, importacct
 
 
 class Login(QtWidgets.QMainWindow):
+	"""This class pulls from ui_files/login/login.ui for it's UI elements; it is the initial MainWindow."""
 	def __init__(self):
 		super().__init__()
 		uic.loadUi("ui_files/login/login.ui", self)
@@ -15,7 +16,7 @@ class Login(QtWidgets.QMainWindow):
 		self.showPassButton.clicked.connect(self.unhidePassword)
 		self.submitButton.clicked.connect(self.validateInputs)
 		self.goToRegisterButton.clicked.connect(self.goToRegister)
-		self.goToImportButton.clicked.connect(importacct.import_acct)
+		self.goToImportButton.clicked.connect(importacct.instantiate_initial)
 
 		self.show()
 
@@ -52,13 +53,8 @@ class Login(QtWidgets.QMainWindow):
 			self.window = vault.Vault(user_id, password)
 			self.close()
 		except Exception as e:
-			traceback.print_exc()
+			print(e)
 
 	def goToRegister(self):
 		self.window = register.Register()
 		self.close()
-
-	def goToImport(self):
-
-		dialog = importacct.Import()
-		dialog.exec_()

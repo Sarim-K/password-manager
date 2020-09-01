@@ -1,11 +1,17 @@
+# standard libraries
+import sqlite3
+
+# external libraries
 from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+
+# local imports
 from backend import database_connection as db
-import sqlite3
 import login, dialog, importacct
 
 
 class Register(QtWidgets.QMainWindow):
+	"""This class pulls from ui_files/register/register.ui for it's UI elements, can only be accessed via the login page."""
 	def __init__(self):
 		super().__init__()
 		uic.loadUi("ui_files/register/register.ui", self)
@@ -15,7 +21,7 @@ class Register(QtWidgets.QMainWindow):
 		self.showPassButton.clicked.connect(self.unhidePassword)
 		self.submitButton.clicked.connect(self.validateInputs)
 		self.goToLoginButton.clicked.connect(self.goToLogin)
-		self.goToImportButton.clicked.connect(importacct.import_acct)
+		self.goToImportButton.clicked.connect(importacct.instantiate_initial)
 
 		self.show()
 
