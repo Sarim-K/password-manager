@@ -19,7 +19,7 @@ def instantiate_initial():
 
 
 class SharedImportMethods:
-	"""This is an abstract class which both import classes inherit from, as they both need the method(s) within.
+	"""This is an abstract class which both import classes inherit, as they both need the method(s) within.
 	This should never be instantiated, only inherited."""
 	def get_old_user_id_length(self, folder_or_password_title):
 		return len(str(folder_or_password_title.split("-")[0]))
