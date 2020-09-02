@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
 	# local imports
 	from backend import database_connection as db
-	import login, register, home
+	import home
 
 
 	sql_query = """
