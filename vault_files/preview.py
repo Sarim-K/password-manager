@@ -22,7 +22,7 @@ class Preview(QtWidgets.QWidget):
 		self._key = key
 
 		self._password_row_data = password_row_data
-		self._password_row_data[1] = self._password_row_data[1].replace(f"{self.user_id}-password-", "")
+		self._password_row_data[1] = self._password_row_data[1].replace(f"{self._user_id}-password-", "")
 
 		self.titleLabel.setText(password_row_data[1])
 
