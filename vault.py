@@ -23,13 +23,13 @@ class ExplorerMethods:
 			child = QtWidgets.QTreeWidgetItem()
 
 			for _ in folders:
-				if key.startswith(f"{self.user_id}-password-"):
+				if key.startswith(f"{self._user_id}-password-"):
 					Type = "Password"
-					child.setText(0, key.replace(f"{self.user_id}-password-", ""))
+					child.setText(0, key.replace(f"{self._user_id}-password-", ""))
 					break
 				else:
 					Type = "Folder"
-					child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
+					child.setText(0, key.replace(f"{self._user_id}-folder-", ""))
 					break
 
 			child.setText(1, Type)
@@ -61,7 +61,7 @@ class ExplorerMethods:
 
 			for subpath in path_array:
 				final_path += subpath
-			final_path = f"{self.user_id}-folder-{final_path}"
+			final_path = f"{self._user_id}-folder-{final_path}"
 
 			return final_path
 
@@ -73,7 +73,7 @@ class ExplorerMethods:
 		self.Explorer.clear()
 		self.Explorer.setHeaderLabels(["Name", "Type"])
 
-		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self.user_id}-folder-%' ORDER BY name ASC"
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
 		for folder in folders:
@@ -87,11 +87,11 @@ class ExplorerMethods:
 
 			folderArray2.append(folder.strip("/"))
 			for password in password_ids:
-				sql_query = f"SELECT TITLE FROM '{self.user_id}-passwords' WHERE ID = ?"
+				sql_query = f"SELECT TITLE FROM '{self._user_id}-passwords' WHERE ID = ?"
 				title = db.c.execute(sql_query, (password[0],)).fetchone()
 
 				try:
-					title = enc.decrypt(self.key, title[0]).decode("utf-8")
+					title = enc.decrypt(self._key, title[0]).decode("utf-8")
 				except TypeError:	# empty url
 					pass
 
@@ -133,7 +133,7 @@ class DrawPreviewMethods:
 			return
 
 		for password in password_ids:
-			sql_query = f"SELECT * FROM '{self.user_id}-passwords' WHERE ID = ?"
+			sql_query = f"SELECT * FROM '{self._user_id}-passwords' WHERE ID = ?"
 			data = db.c.execute(sql_query, (password[0],)).fetchone()
 			suppliedPreviewData.append(data)
 
@@ -144,7 +144,7 @@ class DrawPreviewMethods:
 				self.gridLayout.itemAt(i).widget().setParent(None)
 
 	def get_passwords(self):
-		sql_query = f"SELECT * FROM '{self.user_id}-passwords'"
+		sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
 		data = db.c.execute(sql_query).fetchall()
 		return data
 
@@ -164,7 +164,7 @@ class DrawPreviewMethods:
 			decrypted_preview_data = []
 			for column in preview_data:
 				if type(column) != int:
-					column = enc.decrypt(self.key, column).decode("utf-8")
+					column = enc.decrypt(self._key, column).decode("utf-8")
 				decrypted_preview_data.append(column)
 
 
@@ -172,7 +172,7 @@ class DrawPreviewMethods:
 				x = 0
 				y += 1
 
-			tempPreview = Preview(self.key, decrypted_preview_data, self.user_id)
+			tempPreview = Preview(self._key, decrypted_preview_data, self._user_id)
 			tempPreview.changeMade.connect(self.drawPreviewsExplorer)
 			self.preview_dict[tempPreview.id] = tempPreview
 			self.gridLayout.addWidget(tempPreview, y, x)
@@ -212,14 +212,6 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		# self.Explorer.itemAt(0, 0).setExpanded(0)
 		self.show()
 
-	@property
-	def key(self):
-		return self._key
-
-	@property
-	def user_id(self):
-		return self._user_id
-
 	def drawPreviewsExplorer(self):
 		self.prepareExplorerData()
 		if self.getCurrentItemPath():
@@ -228,10 +220,10 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			self.drawPreviews()
 
 	def search(self):
-		srch.search(self.searchBar.text(), self.user_id, self.key)
+		srch.search(self.searchBar.text(), self._user_id, self._key)
 
 	def addFolder(self):
-		Dialog = enterFolderDialog(self.key)
+		Dialog = enterFolderDialog(self._key)
 		Dialog.exec_()
 
 		try:
@@ -240,8 +232,8 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			return
 
 		path = self.getCurrentItemPath()
-		if path is None or path == f"{self.user_id}-folder-All/":
-			folderName = f"{self.user_id}-folder-{folderName}"
+		if path is None or path == f"{self._user_id}-folder-All/":
+			folderName = f"{self._user_id}-folder-{folderName}"
 		else:
 			folderName = f"{path}{folderName}"
 
@@ -263,7 +255,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 
 	def deleteFolder(self):
 		path = self.getCurrentItemPath()
-		if path is None or path == f"{self.user_id}-folder-All/":
+		if path is None or path == f"{self._user_id}-folder-All/":
 			Dialog = dialog.Dialog("You cannot delete this folder!", dialogName="Invalid folder.")
 			Dialog.exec_()
 			return
@@ -281,13 +273,13 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 	def editFolder(self):
 		final = ""
 		path = self.getCurrentItemPath()
-		if path is None or path == f"{self.user_id}-folder-All/":
+		if path is None or path == f"{self._user_id}-folder-All/":
 			Dialog = dialog.Dialog("You cannot edit this folder!", dialogName="Invalid folder.")
 			Dialog.exec_()
 			return
 
 		else:
-			Dialog = enterFolderDialog(self.key, folderName=self.Explorer.currentItem().text(0))
+			Dialog = enterFolderDialog(self._key, folderName=self.Explorer.currentItem().text(0))
 			Dialog.exec_()
 			try:
 				folderName = Dialog.text
@@ -316,7 +308,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		self.drawPreviewsExplorer()
 
 	def addEntry(self):
-		Dialog = enterDataDialog(self.user_id, self.key)
+		Dialog = enterDataDialog(self._user_id, self._key)
 		Dialog.exec_()
 
 		try:
@@ -325,7 +317,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			return
 
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{self.user_id}-passwords'
+					INSERT OR REPLACE INTO '{self._user_id}-passwords'
 					VALUES(?,?,?,?,?,?,?)
 					"""
 		try:
@@ -336,7 +328,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 
 		path = self.getCurrentItemPath()
 		if path is None:
-			path = f"{self.user_id}-folder-All/"
+			path = f"{self._user_id}-folder-All/"
 
 		sql_query = f"""
 					INSERT OR REPLACE INTO '{path}'
@@ -346,7 +338,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		db.conn.commit()
 
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{self.user_id}-folder-All/'
+					INSERT OR REPLACE INTO '{self._user_id}-folder-All/'
 					VALUES(?)
 					"""
 		db.c.execute(sql_query, (db.c.lastrowid,))
@@ -360,7 +352,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		return
 
 	def goToSettings(self):
-		self.window = settings.Settings(self.user_id, self._password_given)
+		self.window = settings.Settings(self._user_id, self._password_given)
 		self.close()
 
 

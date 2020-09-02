@@ -30,22 +30,13 @@ class Preview(QtWidgets.QWidget):
 		self.deleteButton.clicked.connect(self.remove)
 		self.editButton.clicked.connect(self.edit)
 
-	@property
-	def user_id(self):
-		return self._user_id
-
 
 	@property
 	def id(self):
 		return self._password_row_data[0]
 
-
-	@property
-	def key(self):
-		return self._key
-
 	def remove(self):
-		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self.user_id}-folder-%' ORDER BY name ASC"
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
 		for folder in folders:
@@ -53,7 +44,7 @@ class Preview(QtWidgets.QWidget):
 			db.c.execute(sql_query, (self.id,))		# remove it from any folders that exist
 			db.conn.commit()
 
-		sql_query = f"DELETE FROM '{self.user_id}-passwords' WHERE ID = ?"
+		sql_query = f"DELETE FROM '{self._user_id}-passwords' WHERE ID = ?"
 		db.c.execute(sql_query, (self.id,))	# remove it from the passwords table
 		db.conn.commit()
 
@@ -66,13 +57,13 @@ class Preview(QtWidgets.QWidget):
 
 
 	def edit(self):
-		Dialog = enterDataDialog(self.user_id, self.key, password_row_data=self._password_row_data)
+		Dialog = enterDataDialog(self._user_id, self._key, password_row_data=self._password_row_data)
 		Dialog.exec_()
 
 		details = Dialog.details
 
 		sql_query = f"""
-					UPDATE '{self.user_id}-passwords'
+					UPDATE '{self._user_id}-passwords'
 					SET TITLE = ?,
 					URL = ?,
 					USERNAME = ?,

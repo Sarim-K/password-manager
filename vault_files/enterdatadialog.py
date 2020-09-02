@@ -33,21 +33,12 @@ class enterDataDialog(QtWidgets.QDialog):
 
 		self.show()
 
-
-	@property
-	def key(self):
-		return self._key
-
 	@property
 	def details(self):
 		try:
 			return self._data_dict
 		except AttributeError:	# user exited dialog without entering anything
 			return
-
-	@property
-	def user_id(self):
-		return self._user_id
 
 	def validateText(self):
 		if self.titleEdit.text() == "":
@@ -73,7 +64,7 @@ class enterDataDialog(QtWidgets.QDialog):
 		tempTitles = db.c.execute(sql_query).fetchall()
 
 		for title in tempTitles:
-			decryptedTitle = enc.decrypt(self.key, title[0])
+			decryptedTitle = enc.decrypt(self._key, title[0])
 			if decryptedTitle.decode("utf-8") == self.titleEdit.text():
 				Dialog = dialog.Dialog("This title has already been used!", dialogName="Existing title.")
 				Dialog.exec_()
@@ -83,12 +74,12 @@ class enterDataDialog(QtWidgets.QDialog):
 
 	def saveDetails(self):
 		data_dict = {}
-		data_dict["title"] = enc.encrypt(self.key, f"{self.user_id}-password-{self.titleEdit.text()}")
-		data_dict["url"] = enc.encrypt(self.key, self.urlEdit.text())
-		data_dict["username"] = enc.encrypt(self.key, self.usernameEdit.text())
-		data_dict["email"] = enc.encrypt(self.key, self.emailEdit.text())
-		data_dict["password"] = enc.encrypt(self.key, self.passwordEdit.text())
-		data_dict["other"] = enc.encrypt(self.key, self.otherEdit.text())
+		data_dict["title"] = enc.encrypt(self._key, f"{self._user_id}-password-{self.titleEdit.text()}")
+		data_dict["url"] = enc.encrypt(self._key, self.urlEdit.text())
+		data_dict["username"] = enc.encrypt(self._key, self.usernameEdit.text())
+		data_dict["email"] = enc.encrypt(self._key, self.emailEdit.text())
+		data_dict["password"] = enc.encrypt(self._key, self.passwordEdit.text())
+		data_dict["other"] = enc.encrypt(self._key, self.otherEdit.text())
 		self._data_dict = data_dict
 		self.close()
 
