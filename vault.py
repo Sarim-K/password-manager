@@ -16,46 +16,26 @@ from backend import encryption as enc
 import dialog, settings, importacct
 
 
-class Vault(QtWidgets.QMainWindow):
-	"""This class pulls from ui_files/vault/vault.ui for it's UI elements, and is the MainWindow once logged in."""
-	def __init__(self, user_id, password_given):
-		super().__init__()
-		uic.loadUi("ui_files/vault/vault.ui", self)
+class ExplorerMethods:
+	"""This is an abstract class which Vault inherits. This should never be instantiated, only inherited."""
+	def drawExplorer(self, Explorer, dict_tree, folders):
+		for key, val in dict_tree.items():
+			child = QtWidgets.QTreeWidgetItem()
 
-		self._user_id = user_id
-		self.preview_dict = {}
-		self._key = enc.create_key(password_given)
+			for _ in folders:
+				if key.startswith(f"{self.user_id}-password-"):
+					Type = "Password"
+					child.setText(0, key.replace(f"{self.user_id}-password-", ""))
+					break
+				else:
+					Type = "Folder"
+					child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
+					break
 
-		self.settingsButton.clicked.connect(self.goToSettings)
-		self.deleteFolderButton.clicked.connect(self.deleteFolder)
-		self.editFolderButton.clicked.connect(self.editFolder)
-		self.OKButton.clicked.connect(self.search)
-		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
-		self.newFolder.triggered.connect(self.addFolder)
-		self.newEntry.triggered.connect(self.addEntry)
-		self.newPassword.triggered.connect(self.generatePassword)
+			child.setText(1, Type)
 
-		self.enterKey = QtWidgets.QShortcut(QtGui.QKeySequence("Return"), self)	# return is enter for some reason
-		self.enterKey.activated.connect(self.search)
-
-		_later_import_object = importacct.LaterImportAccount(self._user_id, self._key)
-
-		self.drawPreviews()
-		self.prepareExplorerData()
-		# self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
-		# self.Explorer.itemAt(0, 0).setExpanded(0)
-		self.show()
-
-
-	@property
-	def key(self):
-		return self._key
-
-
-	@property
-	def user_id(self):
-		return self._user_id
-
+			Explorer.addChild(child)
+			self.drawExplorer(child, val, folders)
 
 	def getCurrentItemPath(self, passwordsEnabled=False):
 		path_array = []
@@ -84,36 +64,6 @@ class Vault(QtWidgets.QMainWindow):
 			final_path = f"{self.user_id}-folder-{final_path}"
 
 			return final_path
-
-
-	def drawFolderPreviews(self):
-		suppliedPreviewData = []
-
-		final_path = self.getCurrentItemPath()
-
-		sql_query = f"SELECT PASSWORD_ID FROM '{final_path}'"
-		try:
-			password_ids = db.c.execute(sql_query).fetchall()
-		except sqlite3.OperationalError:	# thrown when an event is called that gets rid of the current selection (i.e. creating a new folder)
-			return
-
-		for password in password_ids:
-			sql_query = f"SELECT * FROM '{self.user_id}-passwords' WHERE ID = ?"
-			data = db.c.execute(sql_query, (password[0],)).fetchone()
-			suppliedPreviewData.append(data)
-
-		self.drawPreviews(suppliedPreviewData=suppliedPreviewData)
-
-
-	def append_to_tree(self, node, c):
-		if not c:
-			return
-
-		if c[0] not in node:
-			node[c[0]] = {}
-
-		self.append_to_tree(node[c[0]], c[1:])
-
 
 	def prepareExplorerData(self):
 		folderArray = []
@@ -153,37 +103,59 @@ class Vault(QtWidgets.QMainWindow):
 		self.drawExplorer(self.Explorer.invisibleRootItem(), root, folders)
 		self.Explorer.expandAll()
 
+	def append_to_tree(self, node, c):
+		if not c:
+			return
 
-	def drawExplorer(self, Explorer, dict_tree, folders):
-		for key, val in dict_tree.items():
-			child = QtWidgets.QTreeWidgetItem()
+		if c[0] not in node:
+			node[c[0]] = {}
 
-			for _ in folders:
-				if key.startswith(f"{self.user_id}-password-"):
-					Type = "Password"
-					child.setText(0, key.replace(f"{self.user_id}-password-", ""))
-					break
-				else:
-					Type = "Folder"
-					child.setText(0, key.replace(f"{self.user_id}-folder-", ""))
-					break
+		self.append_to_tree(node[c[0]], c[1:])
 
-			child.setText(1, Type)
 
-			Explorer.addChild(child)
-			self.drawExplorer(child, val, folders)
+class DrawPreviewMethods:
+	"""This is an abstract class which Vault inherits. This should never be instantiated, only inherited."""
 
+	def get_password_ids(self):
+		final_path = self.getCurrentItemPath()
+
+		sql_query = f"SELECT PASSWORD_ID FROM '{final_path}'"
+		password_ids = db.c.execute(sql_query).fetchall()
+		return password_ids
+
+
+	def drawFolderPreviews(self):
+		suppliedPreviewData = []
+
+		try:
+			password_ids = self.get_password_ids()
+		except sqlite3.OperationalError:
+			return
+
+		for password in password_ids:
+			sql_query = f"SELECT * FROM '{self.user_id}-passwords' WHERE ID = ?"
+			data = db.c.execute(sql_query, (password[0],)).fetchone()
+			suppliedPreviewData.append(data)
+
+		self.drawPreviews(suppliedPreviewData=suppliedPreviewData)
+
+	def clear_grid_layout(self):
+		for i in reversed(range(self.gridLayout.count())): 	# clears the grid
+				self.gridLayout.itemAt(i).widget().setParent(None)
+
+	def get_passwords(self):
+		sql_query = f"SELECT * FROM '{self.user_id}-passwords'"
+		data = db.c.execute(sql_query).fetchall()
+		return data
 
 	def drawPreviews(self, suppliedPreviewData=False):
 		x, y = 0, 0
 		max_preview_width = 4 #the previews are 200px long
 
-		for i in reversed(range(self.gridLayout.count())): 	# clears the grid
-				self.gridLayout.itemAt(i).widget().setParent(None)
+		self.clear_grid_layout()
 
 		if suppliedPreviewData == False:
-			sql_query = f"SELECT * FROM '{self.user_id}-passwords'"
-			data = db.c.execute(sql_query).fetchall()
+			data = self.get_passwords()
 		else:
 			data = suppliedPreviewData
 			del suppliedPreviewData
@@ -208,6 +180,46 @@ class Vault(QtWidgets.QMainWindow):
 			x += 1
 
 
+class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
+	"""This class pulls from ui_files/vault/vault.ui for it's UI elements, and is the MainWindow once logged in."""
+	def __init__(self, user_id, password_given):
+		super().__init__()
+		uic.loadUi("ui_files/vault/vault.ui", self)
+
+		self._user_id = user_id
+		self.preview_dict = {}
+		self._password_given = password_given
+		self._key = enc.create_key(password_given)
+
+		self.settingsButton.clicked.connect(self.goToSettings)
+		self.deleteFolderButton.clicked.connect(self.deleteFolder)
+		self.editFolderButton.clicked.connect(self.editFolder)
+		self.OKButton.clicked.connect(self.search)
+		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
+		self.newFolder.triggered.connect(self.addFolder)
+		self.newEntry.triggered.connect(self.addEntry)
+		self.newPassword.triggered.connect(self.generatePassword)
+
+		self.enterKey = QtWidgets.QShortcut(QtGui.QKeySequence("Return"), self)	# return is enter for some reason
+		self.enterKey.activated.connect(self.search)
+
+		_later_import_object = importacct.LaterImportAccount(self._user_id, self._key)
+		del _later_import_object
+
+		self.drawPreviews()
+		self.prepareExplorerData()
+		# self.Explorer.setColumnWidth(0, round(self.Explorer.width()*.75))
+		# self.Explorer.itemAt(0, 0).setExpanded(0)
+		self.show()
+
+	@property
+	def key(self):
+		return self._key
+
+	@property
+	def user_id(self):
+		return self._user_id
+
 	def drawPreviewsExplorer(self):
 		self.prepareExplorerData()
 		if self.getCurrentItemPath():
@@ -215,12 +227,8 @@ class Vault(QtWidgets.QMainWindow):
 		else:
 			self.drawPreviews()
 
-
 	def search(self):
 		srch.search(self.searchBar.text(), self.user_id, self.key)
-
-		# self.drawPreviews(suppliedPreviewData=results)
-
 
 	def addFolder(self):
 		Dialog = enterFolderDialog(self.key)
@@ -253,7 +261,6 @@ class Vault(QtWidgets.QMainWindow):
 
 		self.drawPreviewsExplorer()
 
-
 	def deleteFolder(self):
 		path = self.getCurrentItemPath()
 		if path is None or path == f"{self.user_id}-folder-All/":
@@ -270,7 +277,6 @@ class Vault(QtWidgets.QMainWindow):
 			db.conn.commit()
 
 		self.drawPreviewsExplorer()
-
 
 	def editFolder(self):
 		final = ""
@@ -308,7 +314,6 @@ class Vault(QtWidgets.QMainWindow):
 		db.conn.commit()
 
 		self.drawPreviewsExplorer()
-
 
 	def addEntry(self):
 		Dialog = enterDataDialog(self.user_id, self.key)
@@ -349,16 +354,15 @@ class Vault(QtWidgets.QMainWindow):
 
 		self.drawPreviewsExplorer()
 
-
 	def generatePassword(self):
 		Dialog = passwordGenerator()
 		Dialog.exec_()
 		return
 
-
 	def goToSettings(self):
-		self.window = settings.Settings(self.user_id, self.key)
+		self.window = settings.Settings(self.user_id, self._password_given)
 		self.close()
+
 
 if __name__ == "__main__":
 	import sys
