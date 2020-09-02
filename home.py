@@ -4,24 +4,105 @@ import sqlite3
 # external libraries
 from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5.QtWidgets import QFileDialog
 
 # local imports
 from backend import database_connection as db
-import login, dialog, importacct
+import dialog, vault, importacct
 
 
-class Register(QtWidgets.QMainWindow):
-	"""This class pulls from ui_files/register/register.ui for it's UI elements, can only be accessed via the login page."""
+class Home(QtWidgets.QMainWindow):
+	"""This class pulls from ui_files/home/home.ui for it's UI elements; it is the initial MainWindow."""
 	def __init__(self):
 		super().__init__()
-		uic.loadUi("ui_files/register/register.ui", self)
+		uic.loadUi("ui_files/home/home.ui", self)
+
+		self.goToLoginButton.clicked.connect(self.goToLogin)
+		self.goToRegisterButton.clicked.connect(self.goToRegister)
+		self.goToImportButton.clicked.connect(self.goToImport)
+
+		self.show()
+
+	def login(self):
+		self.window = vault.Vault(self.login_dialog.user_id, self.login_dialog.password)
+		self.close()
+
+	def goToLogin(self):
+		self.login_dialog = Login()
+		self.login_dialog.logged_in.connect(self.login)
+		self.login_dialog.exec_()
+
+	def goToRegister(self):
+		Dialog = Register()
+		Dialog.exec_()
+
+	def goToImport(self):
+		_ = importacct.InitialImportAccount()
+
+
+class Login(QtWidgets.QDialog):
+	"""This class is a dialog used to log in."""
+	logged_in = QtCore.pyqtSignal()
+	def __init__(self):
+		super().__init__()
+		uic.loadUi("ui_files/home/login.ui", self)
+
+		self._passwordHidden = True
+		self._user_id = None
+		self._password = None
+
+		self.showPassButton.clicked.connect(self.unhidePassword)
+		self.submitButton.clicked.connect(self.validateInputs)
+
+		self.show()
+
+	@property
+	def user_id(self):
+		return self._user_id
+
+	@property
+	def password(self):
+		return self._password
+
+	def unhidePassword(self):
+		if self._passwordHidden is True:
+			self.passwordEdit.setEchoMode(QtWidgets.QLineEdit.Normal)
+			self.showPassButton.setText("Hide Password")
+			self._passwordHidden = False
+		else:
+			self.passwordEdit.setEchoMode(QtWidgets.QLineEdit.Password)
+			self.showPassButton.setText("Show Password")
+			self._passwordHidden = True
+
+	def get_user_id_and_password(self, username):
+		sql_query = f"SELECT * FROM 'user-data' WHERE USERNAME = ?"
+		retrieved_data = db.c.execute(sql_query, (username,)).fetchone()
+		return retrieved_data[0], retrieved_data[2]	# user_id, password
+
+	def validateInputs(self):
+		username = self.usernameEdit.text()
+		self._password = self.passwordEdit.text()
+
+		try:
+			self._user_id, retrieved_password = self.get_user_id_and_password(username)
+			PasswordHasher().verify(retrieved_password, self._password)
+			self.logged_in.emit()	# this is emitted, and then the MainWindow handles closing itself
+			self.close()
+		except Exception as e:
+			Dialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
+			Dialog.exec_()
+
+
+class Register(QtWidgets.QDialog):
+	"""This class is a dialog used to register an account."""
+	def __init__(self):
+		super().__init__()
+		uic.loadUi("ui_files/home/register.ui", self)
 
 		self._passwordHidden = True
 
 		self.showPassButton.clicked.connect(self.unhidePassword)
 		self.submitButton.clicked.connect(self.validateInputs)
-		self.goToLoginButton.clicked.connect(self.goToLogin)
-		self.goToImportButton.clicked.connect(importacct.instantiate_initial)
 
 		self.show()
 
@@ -116,7 +197,3 @@ class Register(QtWidgets.QMainWindow):
 		self.usernameEdit.setText("")
 		self.passwordEdit.setText("")
 		self.passwordRetypeEdit.setText("")
-
-	def goToLogin(self):
-		self.window = login.Login()
-		self.close()

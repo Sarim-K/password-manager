@@ -24,6 +24,9 @@ class enterFolderDialog(QtWidgets.QDialog):
 
 		self.show()
 
+	@property
+	def text(self):
+		return f"{self._text}/"
 
 	def saveText(self):
 		self._text = self.lineEdit.text()
@@ -45,8 +48,3 @@ class enterFolderDialog(QtWidgets.QDialog):
 			self.close()
 		else:
 			self.saveText()
-
-
-	@property
-	def text(self):
-		return f"{self._text}/"

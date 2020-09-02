@@ -13,7 +13,6 @@ import dialog
 
 class Settings(QtWidgets.QMainWindow):
 	"""This class pulls from ui_files/settings/settings.ui for it's UI elements, and is a MainWindow."""
-	export_clicked = QtCore.pyqtSignal()
 	def __init__(self, user_id, password_given):
 		super().__init__()
 		uic.loadUi("ui_files/settings/settings.ui", self)
