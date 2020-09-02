@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
 	# local imports
 	from backend import database_connection as db
-	import login, register
+	import login, register, home
 
 
 	sql_query = """
@@ -22,5 +22,5 @@ if __name__ == "__main__":
 	db.conn.commit()
 
 	app = QtWidgets.QApplication(sys.argv)
-	window = login.Login()
+	window = home.Home()
 	app.exec_()
