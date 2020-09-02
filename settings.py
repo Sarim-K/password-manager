@@ -6,23 +6,37 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 # local imports
 from backend import database_connection as db
+from backend import encryption as enc
+import vault
 import dialog
 
 
 class Settings(QtWidgets.QMainWindow):
 	"""This class pulls from ui_files/settings/settings.ui for it's UI elements, and is a MainWindow."""
 	export_clicked = QtCore.pyqtSignal()
-	def __init__(self, user_id, key):
+	def __init__(self, user_id, password_given):
 		super().__init__()
 		uic.loadUi("ui_files/settings/settings.ui", self)
 
 		self._user_id = user_id
-		self._key = key
+		self._password_given = password_given
+		self._key = enc.create_key(password_given)
 
-		export_obj = Export(self._user_id, self._key)
-		self.gridLayout.addWidget(export_obj, 1, 0)
+		self._export_obj = Export(self._user_id, self._key)
 
+		self.goBackButton.clicked.connect(self.goBack)
+
+		self.initUI()
 		self.show()
+
+	def initUI(self):
+		self.tabwidget = QtWidgets.QTabWidget()
+		self.tabwidget.addTab(self._export_obj, "Export")
+		self.gridLayout.addWidget(self.tabwidget, 0, 0)
+
+	def goBack(self):
+		self.window = vault.Vault(self._user_id, self._password_given)
+		self.close()
 
 
 class Export(QtWidgets.QWidget):
@@ -44,7 +58,7 @@ class Export(QtWidgets.QWidget):
 		user_dict["details"] = details
 
 		with open("export.psm", 'w') as json_file:
-  			json.dump(user_dict, json_file)
+			json.dump(user_dict, json_file)
 
 		Dialog = dialog.Dialog("Account successfully exported as 'export.psm!'", dialogName="Export complete.")
 		Dialog.exec_()
