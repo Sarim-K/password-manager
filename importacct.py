@@ -14,10 +14,6 @@ from backend import encryption as enc
 import dialog
 
 
-def instantiate_initial():
-	_initial_import_object = InitialImportAccount()
-
-
 class SharedImportMethods:
 	"""This is an abstract class which both import classes inherit, as they both need the method(s) within.
 	This should never be instantiated, only inherited."""
