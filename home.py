@@ -6,15 +6,13 @@ from argon2 import PasswordHasher
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtWidgets import QFileDialog
 
-
 # local imports
 from backend import database_connection as db
 import dialog, vault, importacct
 
-global window
 
 class Home(QtWidgets.QMainWindow):
-	"""This class pulls from ui_files/login/login.ui for it's UI elements; it is the initial MainWindow."""
+	"""This class pulls from ui_files/home/home.ui for it's UI elements; it is the initial MainWindow."""
 	def __init__(self):
 		super().__init__()
 		uic.loadUi("ui_files/home/home.ui", self)
@@ -43,6 +41,7 @@ class Home(QtWidgets.QMainWindow):
 
 
 class Login(QtWidgets.QDialog):
+	"""This class is a dialog used to log in."""
 	logged_in = QtCore.pyqtSignal()
 	def __init__(self):
 		super().__init__()
@@ -93,8 +92,9 @@ class Login(QtWidgets.QDialog):
 			Dialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
 			Dialog.exec_()
 
+
 class Register(QtWidgets.QDialog):
-	"""This class pulls from ui_files/register/register.ui for it's UI elements, can only be accessed via the login page."""
+	"""This class is a dialog used to register an account."""
 	def __init__(self):
 		super().__init__()
 		uic.loadUi("ui_files/home/register.ui", self)
