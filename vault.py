@@ -148,7 +148,7 @@ class DrawPreviewMethods:
 		data = db.c.execute(sql_query).fetchall()
 		return data
 
-	def drawPreviews(self, suppliedPreviewData=False):
+	def drawPreviews(self, suppliedPreviewData=False, decrypted=False):
 		x, y = 0, 0
 		max_preview_width = 4 #the previews are 200px long
 
@@ -163,21 +163,24 @@ class DrawPreviewMethods:
 		for preview_data in data:
 			decrypted_preview_data = []
 			for column in preview_data:
-				if type(column) != int:
-					column = enc.decrypt(self._key, column).decode("utf-8")
+				if decrypted == False:
+					if type(column) != int:
+						column = enc.decrypt(self._key, column).decode("utf-8")
 				decrypted_preview_data.append(column)
-
 
 			if x == max_preview_width:
 				x = 0
 				y += 1
 
-			tempPreview = Preview(self._key, decrypted_preview_data, self._user_id)
-			tempPreview.changeMade.connect(self.drawPreviewsExplorer)
-			self.preview_dict[tempPreview.id] = tempPreview
-			self.gridLayout.addWidget(tempPreview, y, x)
+			self.render_previews(decrypted_preview_data, y, x)
 
 			x += 1
+
+	def render_previews(self, preview_data, y, x):
+		tempPreview = Preview(self._key, preview_data, self._user_id)
+		tempPreview.changeMade.connect(self.drawPreviewsExplorer)
+		self.preview_dict[tempPreview.id] = tempPreview
+		self.gridLayout.addWidget(tempPreview, y, x)
 
 
 class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
@@ -195,6 +198,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		self.deleteFolderButton.clicked.connect(self.deleteFolder)
 		self.editFolderButton.clicked.connect(self.editFolder)
 		self.OKButton.clicked.connect(self.search)
+		self.searchBar.textEdited.connect(self.search)
 		self.Explorer.currentItemChanged.connect(self.drawFolderPreviews)
 		self.newFolder.triggered.connect(self.addFolder)
 		self.newEntry.triggered.connect(self.addEntry)
@@ -220,7 +224,8 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			self.drawPreviews()
 
 	def search(self):
-		srch.search(self.searchBar.text(), self._user_id, self._key)
+		data = srch.search(self.searchBar.text(), self._user_id, self._key)
+		self.drawPreviews(suppliedPreviewData=data, decrypted=True)
 
 	def addFolder(self):
 		Dialog = enterFolderDialog(self._key)

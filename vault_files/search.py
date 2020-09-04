@@ -33,18 +33,37 @@ def matching_word(search_term, title):
 	score = 0
 	for word in search_term.split(" "):
 		score += title.count(search_term) * 5
+	return score
 
 def same_order(search_term, title):
-	passed = False
-	count = 0
-	search_term = list(search_term)
-	for character in title:
-		if character == search_term[count]:
-			count += 1
-			passed = True
-		else:
-			return passed
-		return passed
+	search_term, title = search_term.replace(" ", ""), title.replace(" ", "")
+
+	start = 0
+	for character in search_term:
+		for count in range(start, len(title), 1):
+			start = count
+			temp = title[count]
+
+			if character == temp:
+				break
+
+			if count == (len(title)-1):
+				return 0
+
+	return 5	# 5 score
+
+def exact_match(search_term, unprefixed_title):
+	if unprefixed_title == search_term:
+		return 9999
+	else:
+		return 0
+
+def sort_and_format(data):
+	formatted_data = []
+	data = sorted(data, key=lambda d: sorted(d.items()))
+	for password in data:
+		formatted_data.append(list(password.values())[0])
+	return formatted_data
 
 
 def search(search_term, user_id, key):
@@ -55,13 +74,13 @@ def search(search_term, user_id, key):
 	for row in data:
 		score = 0
 		title = row[1]
-		unprefixed_title = remove_prefix(title)
+		unprefixed_title = remove_prefix(title)[0]
 
-		# print(row, unprefixed_title)
-		if unprefixed_title == search_term:
-			final.append({"exact":title})
-			continue
+		score += exact_match(search_term, unprefixed_title)
+		score += same_order(search_term, unprefixed_title)
+		score += matching_word(search_term, unprefixed_title)
 
+		if score >= 5:
+			final.append({score:row})
 
-
-		matching_word(search_term, unprefixed_title)
+	return sort_and_format(final)
