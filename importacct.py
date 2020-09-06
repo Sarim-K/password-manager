@@ -41,7 +41,6 @@ class InitialImportAccount(SharedImportMethods):
 		self.create_login_details(_new_username, _details[1])
 		_user_id = self.get_new_user_id(_new_username)
 
-		print(_contents)
 		_old_user_id_length = self.get_old_user_id_length(list(_contents.keys())[0])
 
 		_contents = self.replace_folder_user_ids(_user_id, _old_user_id_length, _contents)
@@ -165,7 +164,6 @@ class LaterImportAccount(SharedImportMethods):
 	This is instantiated when the imported account is logged into for the first time, from vault.py, exclusively."""
 	def __init__(self, _user_id, _key):
 		_imported = self.check_if_imported(_user_id)
-		print(_imported)
 		if _imported:
 			_folder_name = self.get_a_folder_name(_user_id)
 			_passwords = self.get_passwords(_user_id)
@@ -193,9 +191,7 @@ class LaterImportAccount(SharedImportMethods):
 		folder_name = db.c.execute(sql_query).fetchone()[0]
 		return folder_name
 
-	def replace_title_user_id(self, user_id, old_user_id_length, title):
-		# print(str(user_id)+title[old_user_id_length:])
-		return str(user_id)+title[old_user_id_length:]
+	replace_title_user_id = lambda self, user_id, old_user_id_length, title: str(user_id)+title[old_user_id_length:]
 
 	def decrypt_and_replace_titles(self, data, key, user_id, old_user_id_length):
 		new_data = []
