@@ -8,7 +8,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 # local imports
 from vault_files.enterdatadialog import *
 from vault_files.enterfolderdialog import *
-from vault_files.expanddialog import *
 from vault_files.passwordgenerator import *
 from vault_files.preview import *
 import vault_files.search as srch

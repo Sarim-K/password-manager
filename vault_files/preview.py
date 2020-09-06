@@ -8,8 +8,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
 from vault_files.enterdatadialog import *
-from vault_files.expanddialog import *
-
 
 class Preview(QtWidgets.QWidget):
 	"""This class is used to display a small summary of a password entry; displayed in a grid on the right side of the vault."""
@@ -26,7 +24,7 @@ class Preview(QtWidgets.QWidget):
 
 		self.titleLabel.setText(password_row_data[1])
 
-		self.expandButton.clicked.connect(self.expand)
+		self.moveButton.clicked.connect(self.move)
 		self.deleteButton.clicked.connect(self.remove)
 		self.editButton.clicked.connect(self.edit)
 
@@ -51,10 +49,8 @@ class Preview(QtWidgets.QWidget):
 		self.changeMade.emit()
 
 
-	def expand(self):
-		Dialog = expandDialog(self._password_row_data)
-		Dialog.exec_()
-
+	def move(self):
+		raise NotImplementedError
 
 	def edit(self):
 		Dialog = enterDataDialog(self._user_id, self._key, password_row_data=self._password_row_data)

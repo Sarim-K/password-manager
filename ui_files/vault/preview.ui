@@ -68,7 +68,7 @@
        </widget>
       </item>
       <item row="2" column="2">
-       <widget class="QPushButton" name="expandButton">
+       <widget class="QPushButton" name="moveButton">
         <property name="minimumSize">
          <size>
           <width>50</width>
@@ -82,7 +82,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Expand</string>
+         <string>Move</string>
         </property>
        </widget>
       </item>
