@@ -40,15 +40,17 @@ def same_order(search_term, title):
 
 	start = 0
 	for character in search_term:
+		found = False
 		for count in range(start, len(title), 1):
 			start = count
 			temp = title[count]
 
 			if character == temp:
+				found = True
 				break
 
-			if count == (len(title)-1):
-				return 0
+		if not found:
+			return 0
 
 	return 5	# 5 score
 
@@ -64,7 +66,6 @@ def sort_and_format(data):
 	for password in data:
 		formatted_data.append(list(password.values())[0])
 	return formatted_data
-
 
 def search(search_term, user_id, key):
 	final = []
