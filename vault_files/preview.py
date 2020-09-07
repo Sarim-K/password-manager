@@ -8,8 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
 from vault_files.enterdatadialog import *
-from vault_files.expanddialog import *
-
+import vault_files.movefolder as mf
 
 class Preview(QtWidgets.QWidget):
 	"""This class is used to display a small summary of a password entry; displayed in a grid on the right side of the vault."""
@@ -26,10 +25,9 @@ class Preview(QtWidgets.QWidget):
 
 		self.titleLabel.setText(password_row_data[1])
 
-		self.expandButton.clicked.connect(self.expand)
+		self.moveButton.clicked.connect(self.move)
 		self.deleteButton.clicked.connect(self.remove)
 		self.editButton.clicked.connect(self.edit)
-
 
 	@property
 	def id(self):
@@ -50,10 +48,28 @@ class Preview(QtWidgets.QWidget):
 
 		self.changeMade.emit()
 
+	def move(self):
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
+		folders = db.c.execute(sql_query).fetchall()
 
-	def expand(self):
-		Dialog = expandDialog(self._password_row_data)
+		for folder in folders:
+			if folder[0] != f"{self._user_id}-folder-All/":
+				sql_query = f"DELETE FROM '{folder[0]}' WHERE PASSWORD_ID = ?"
+				db.c.execute(sql_query, (self.id,))		# remove it from any folders that exist
+			db.conn.commit()
+
+		Dialog = mf.MoveFolder(self._user_id, self.id, folders)
 		Dialog.exec_()
+
+		if Dialog.completed:
+			sql_query = f"""
+						INSERT OR REPLACE INTO '{Dialog.selection}'
+						VALUES(?)
+						"""
+			db.c.execute(sql_query, (self.id,))
+			db.conn.commit()
+
+			self.changeMade.emit()
 
 
 	def edit(self):
