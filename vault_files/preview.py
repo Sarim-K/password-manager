@@ -34,14 +34,6 @@ class Preview(QtWidgets.QWidget):
 		return self._password_row_data[0]
 
 	def remove(self):
-		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
-		folders = db.c.execute(sql_query).fetchall()
-
-		for folder in folders:
-			sql_query = f"DELETE FROM '{folder[0]}' WHERE PASSWORD_ID = ?"
-			db.c.execute(sql_query, (self.id,))		# remove it from any folders that exist
-			db.conn.commit()
-
 		sql_query = f"DELETE FROM '{self._user_id}-passwords' WHERE ID = ?"
 		db.c.execute(sql_query, (self.id,))	# remove it from the passwords table
 		db.conn.commit()
@@ -61,16 +53,20 @@ class Preview(QtWidgets.QWidget):
 		Dialog = mf.MoveFolder(self._user_id, self.id, folders)
 		Dialog.exec_()
 
-		if Dialog.completed:
-			sql_query = f"""
-						INSERT OR REPLACE INTO '{Dialog.selection}'
-						VALUES(?)
-						"""
-			db.c.execute(sql_query, (self.id,))
-			db.conn.commit()
+		try:
+			Dialog.completed
+			Dialog.selection
+		except AttributeError:
+			return
 
-			self.changeMade.emit()
+		sql_query = f"""
+					INSERT OR REPLACE INTO '{Dialog.selection}'
+					VALUES(?)
+					"""
+		db.c.execute(sql_query, (self.id,))
+		db.conn.commit()
 
+		self.changeMade.emit()
 
 	def edit(self):
 		Dialog = enterDataDialog(self._user_id, self._key, password_row_data=self._password_row_data)
