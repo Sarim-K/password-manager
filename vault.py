@@ -10,6 +10,7 @@ from vault_files.enterdatadialog import *
 from vault_files.enterfolderdialog import *
 from vault_files.passwordgenerator import *
 from vault_files.preview import *
+from vault_files.movefolder import *
 import vault_files.search as srch
 from backend import encryption as enc
 import dialog, settings, importacct
@@ -110,6 +111,11 @@ class ExplorerMethods:
 			node[c[0]] = {}
 
 		self.append_to_tree(node[c[0]], c[1:])
+
+	def get_all_folders(self, user_id):
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{self._user_id}-folder-%' ORDER BY name ASC"
+		folders = db.c.execute(sql_query).fetchall()
+		return folders
 
 
 class DrawPreviewMethods:
@@ -243,13 +249,15 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 
 		sql_query = f"""
 		CREATE TABLE '{folderName}' (
-		PASSWORD_ID INTEGER PRIMARY KEY
+		PASSWORD_ID INTEGER PRIMARY KEY,
+		FOREIGN KEY(PASSWORD_ID) REFERENCES '{self._user_id}-folder-All/'(PASSWORD_ID)
 		);"""
 
 		try:
 			db.c.execute(sql_query)
 			db.conn.commit()
-		except sqlite3.OperationalError:
+		except sqlite3.OperationalError as e:
+			print(e)
 			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
 			Dialog.exec_()
 
