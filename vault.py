@@ -1,6 +1,7 @@
 # standard libaries
 import sqlite3
 import random
+import traceback
 
 # external libaries
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -250,7 +251,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		sql_query = f"""
 		CREATE TABLE '{folderName}' (
 		PASSWORD_ID INTEGER PRIMARY KEY,
-		FOREIGN KEY(PASSWORD_ID) REFERENCES '{self._user_id}-folder-All/'(PASSWORD_ID)
+		FOREIGN KEY(PASSWORD_ID) REFERENCES '{self._user_id}-passwords'(ID) ON DELETE CASCADE
 		);"""
 
 		try:
@@ -262,7 +263,6 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			Dialog.exec_()
 
 		Dialog.close()
-
 		self.drawPreviewsExplorer()
 
 	def deleteFolder(self):

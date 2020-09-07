@@ -17,9 +17,7 @@ import dialog
 class SharedImportMethods:
 	"""This is an abstract class which both import classes inherit, as they both need the method(s) within.
 	This should never be instantiated, only inherited."""
-	def get_old_user_id_length(self, folder_or_password_title):
-		return len(str(folder_or_password_title.split("-")[0]))
-
+	get_old_user_id_length = lambda self, folder_or_password_title: len(str(folder_or_password_title.split("-")[0]))
 
 class InitialImportAccount(SharedImportMethods):
 	"""This is a class used to import data from .psm files. This class handles the initial part of importing."""
@@ -43,11 +41,11 @@ class InitialImportAccount(SharedImportMethods):
 
 		_old_user_id_length = self.get_old_user_id_length(list(_contents.keys())[0])
 
-		_contents = self.replace_folder_user_ids(_user_id, _old_user_id_length, _contents)
-		self.import_folders(_contents)
-
 		_passwords = self.encode_passwords(_passwords)
 		self.import_passwords(_passwords, _user_id)
+
+		_contents = self.replace_folder_user_ids(_user_id, _old_user_id_length, _contents)
+		self.import_folders(_user_id, _contents)
 
 	def get_file_path(self):
 		filename = QFileDialog.getOpenFileName(None, 'Open file', os.getcwd(), "*.psm")[0]
@@ -107,23 +105,6 @@ class InitialImportAccount(SharedImportMethods):
 			new_contents[(str(user_id)+folder[old_user_id_length:])] = contents[folder]
 		return new_contents
 
-	def import_folders(self, contents):
-		for folder in contents:
-			sql_query = f"""
-			CREATE TABLE '{folder}' (
-			PASSWORD_ID INTEGER PRIMARY KEY
-			);"""
-			db.c.execute(sql_query)
-			db.conn.commit()
-
-			for folder_id in contents[folder]:
-				sql_query = f"""
-				INSERT OR REPLACE INTO '{folder}'
-				VALUES(?)
-				"""
-				db.c.execute(sql_query, (folder_id,))
-			db.conn.commit()
-
 	def encode_passwords(self, passwords):
 		passwords_dict = {}
 		for key in passwords:
@@ -157,6 +138,25 @@ class InitialImportAccount(SharedImportMethods):
 						"""
 			db.c.execute(sql_query, (int(key), passwords[key][0], passwords[key][1], passwords[key][2], passwords[key][3], passwords[key][4], passwords[key][5]))
 		db.conn.commit()
+
+	def import_folders(self, user_id, contents):
+		for folder in contents:
+			print(folder)
+			sql_query = f"""
+			CREATE TABLE '{folder}' (
+			PASSWORD_ID INTEGER PRIMARY KEY,
+			FOREIGN KEY(PASSWORD_ID) REFERENCES '{user_id}-passwords'(ID) ON DELETE CASCADE
+			);"""
+			db.c.execute(sql_query)
+			db.conn.commit()
+
+			for folder_id in contents[folder]:
+				sql_query = f"""
+				INSERT OR REPLACE INTO '{folder}'
+				VALUES(?)
+				"""
+				db.c.execute(sql_query, (folder_id,))
+			db.conn.commit()
 
 
 class LaterImportAccount(SharedImportMethods):

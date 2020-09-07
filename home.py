@@ -150,7 +150,7 @@ class Register(QtWidgets.QDialog):
 		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = ?"
 		retrieved_data = db.c.execute(sql_query, (username,))
 		try:
-			retrieved_data.fetchone()[0]
+			print(retrieved_data.fetchone()[0])
 			Dialog = dialog.Dialog("Username already registered!", dialogName="Account already exists.")
 			Dialog.exec_()
 			return
@@ -186,7 +186,8 @@ class Register(QtWidgets.QDialog):
 		# create user's all folder table
 		sql_query = f"""
 		CREATE TABLE '{user_id}-folder-All/' (
-		PASSWORD_ID INTEGER PRIMARY KEY
+		PASSWORD_ID INTEGER PRIMARY KEY,
+		FOREIGN KEY(PASSWORD_ID) REFERENCES '{user_id}-passwords'(ID) ON DELETE CASCADE
 		);"""
 		db.c.execute(sql_query)
 		db.conn.commit()
