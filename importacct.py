@@ -141,7 +141,6 @@ class InitialImportAccount(SharedImportMethods):
 
 	def import_folders(self, user_id, contents):
 		for folder in contents:
-			print(folder)
 			sql_query = f"""
 			CREATE TABLE '{folder}' (
 			PASSWORD_ID INTEGER PRIMARY KEY,
