@@ -10,7 +10,7 @@ from backend import database_connection as db
 from backend import encryption as enc
 
 
-class passwordGenerator(QtWidgets.QDialog):
+class PasswordGenerator(QtWidgets.QDialog):
 	"""This class is a dialog used to randomly generate a sequence of characters, which one could use as a password."""
 	def __init__(self):
 		super().__init__()

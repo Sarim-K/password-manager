@@ -85,6 +85,6 @@ class enterDataDialog(QtWidgets.QDialog):
 		self.close()
 
 	def generatePassword(self):
-		Dialog = passwordGenerator()
+		Dialog = PasswordGenerator()
 		Dialog.exec_()
 		return
