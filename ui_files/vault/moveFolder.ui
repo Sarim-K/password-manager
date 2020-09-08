@@ -18,6 +18,13 @@
     <widget class="QListWidget" name="listWidget"/>
    </item>
    <item>
+    <widget class="QPushButton" name="removeButton">
+     <property name="text">
+      <string>Remove From Current Folder</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QPushButton" name="OKButton">
      <property name="text">
       <string>OK</string>

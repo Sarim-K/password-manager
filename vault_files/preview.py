@@ -53,18 +53,19 @@ class Preview(QtWidgets.QWidget):
 		Dialog = mf.MoveFolder(self._user_id, self.id, folders)
 		Dialog.exec_()
 
-		try:
-			Dialog.completed
-			Dialog.selection
-		except AttributeError:
-			return
+		if not Dialog.remove_only:
+			try:
+				Dialog.completed
+				Dialog.selection
+			except AttributeError:
+				return
 
-		sql_query = f"""
-					INSERT OR REPLACE INTO '{Dialog.selection}'
-					VALUES(?)
-					"""
-		db.c.execute(sql_query, (self.id,))
-		db.conn.commit()
+			sql_query = f"""
+						INSERT OR REPLACE INTO '{Dialog.selection}'
+						VALUES(?)
+						"""
+			db.c.execute(sql_query, (self.id,))
+			db.conn.commit()
 
 		self.changeMade.emit()
 

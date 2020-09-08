@@ -314,8 +314,14 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		sql_query = f"""ALTER TABLE '{path}'
  					RENAME TO '{final}';
 		  			"""
-		db.c.execute(sql_query)
-		db.conn.commit()
+
+		try:
+			db.c.execute(sql_query)
+			db.conn.commit()
+		except sqlite3.OperationalError as e:
+			print(e)
+			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
+			Dialog.exec_()
 
 		self.drawPreviewsExplorer()
 
@@ -359,7 +365,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		self.drawPreviewsExplorer()
 
 	def generatePassword(self):
-		Dialog = passwordGenerator()
+		Dialog = PasswordGenerator()
 		Dialog.exec_()
 		return
 

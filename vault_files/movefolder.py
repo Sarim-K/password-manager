@@ -11,9 +11,11 @@ class MoveFolder(QtWidgets.QDialog):
 		self._user_id = user_id
 		self._password_id = password_id
 		self._completed = False
+		self._remove_only = False
 
 		self.format_folder_list(folders)
 
+		self.removeButton.clicked.connect(self.remove_from_folder)
 		self.OKButton.clicked.connect(self.add_to_new_folder)
 		self.listWidget.addItems(self._folders)
 
@@ -36,6 +38,11 @@ class MoveFolder(QtWidgets.QDialog):
 		except IndexError:
 			return
 
+	def remove_from_folder(self):
+		self._completed = True
+		self._remove_only = True
+		self.close()
+
 	@property
 	def selection(self):
 		return self._selection
@@ -43,3 +50,7 @@ class MoveFolder(QtWidgets.QDialog):
 	@property
 	def completed(self):
 		return self._completed
+
+	@property
+	def remove_only(self):
+		return self._remove_only
