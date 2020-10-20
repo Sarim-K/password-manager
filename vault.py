@@ -12,9 +12,10 @@ from vault_files.enterfolderdialog import *
 from vault_files.passwordgenerator import *
 from vault_files.preview import *
 from vault_files.movefolder import *
+from home_files import importacct
 import vault_files.search as srch
 from backend import encryption as enc
-import dialog, settings, importacct
+import dialog, settings
 
 
 class ExplorerMethods:
@@ -230,8 +231,8 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			self.drawPreviews()
 
 	def search(self):
-		data = srch.search(self.searchBar.text(), self._user_id, self._key)
-		self.drawPreviews(suppliedPreviewData=data, decrypted=True)
+		search_object = srch.Search(self.searchBar.text(), self._user_id, self._key)
+		self.drawPreviews(suppliedPreviewData=search_object.results, decrypted=True)
 
 	def addFolder(self):
 		Dialog = enterFolderDialog(self._key)
