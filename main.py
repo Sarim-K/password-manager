@@ -13,10 +13,11 @@ if __name__ == "__main__":
 
 	sql_query = """
 	CREATE TABLE IF NOT EXISTS 'user-data' (
-	USER_ID INTEGER PRIMARY KEY,
-	USERNAME  	TEXT	(1, 100),
-	PASSWORD  	TEXT    (1, 100),
-	IMPORTED	INTEGER (1, 1)
+	USER_ID 	INTEGER 			PRIMARY KEY,
+	USERNAME  	TEXT	(1, 100)	NOT NULL,
+	PASSWORD  	TEXT    (1, 100)	NOT NULL,
+	IMPORTED	INTEGER (1, 1),
+	EMAIL		TEXT 	(1, 100)
 	);"""
 	db.c.execute(sql_query)
 	db.conn.commit()

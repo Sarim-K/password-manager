@@ -76,9 +76,9 @@ class Register(QtWidgets.QDialog):
 		# insert username & password into database
 		sql_query = f"""
 		INSERT OR REPLACE INTO 'user-data'
-		VALUES(?, ?, ?, ?)
+		VALUES(?, ?, ?, ?, ?)
 		"""
-		db.c.execute(sql_query, (None, username, password, 0))
+		db.c.execute(sql_query, (None, username, password, None, None))
 		db.conn.commit()
 
 		# get user's id

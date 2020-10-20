@@ -21,7 +21,9 @@ class Settings(QtWidgets.QMainWindow):
 		self._password_given = password_given
 		self._key = enc.create_key(password_given)
 
+		self._details_obj = Details(self._user_id)
 		self._export_obj = Export(self._user_id, self._key)
+		# self._details_obj = Details()
 
 		self.goBackButton.clicked.connect(self.goBack)
 
@@ -31,7 +33,9 @@ class Settings(QtWidgets.QMainWindow):
 	def initUI(self):
 		self.tabwidget = QtWidgets.QTabWidget()
 		self.tabwidget.addTab(self._export_obj, "Export")
+		self.tabwidget.addTab(self._details_obj, "Details")
 		self.gridLayout.addWidget(self.tabwidget, 0, 0)
+
 
 	def goBack(self):
 		self.window = vault.Vault(self._user_id, self._password_given)
@@ -116,3 +120,46 @@ class Export(QtWidgets.QWidget):
 		sql_query = "SELECT USERNAME, PASSWORD FROM 'user-data' WHERE USER_ID = ?"
 		username, password = db.c.execute(sql_query, (self._user_id,)).fetchone()
 		return username, password
+
+
+class Details(QtWidgets.QWidget):
+	"""This class pulls from ui_files/settings/details.ui for it's UI elements, and is a widget within the Settings MainWindow."""
+	def __init__(self, user_id):
+		super().__init__()
+		uic.loadUi("ui_files/settings/details.ui", self)
+
+		self._user_id = user_id
+
+		if self.existing_email_address:
+			self.lineEdit.setText(self.existing_email_address)
+
+		self.OKButton.clicked.connect(self.set_email_address)
+
+	@property
+	def email_address(self):
+		if "@" in self.lineEdit.text() and "." in self.lineEdit.text().split("@")[1]:
+			return self.lineEdit.text()
+		else:
+			return None
+
+	@property
+	def existing_email_address(self):
+		sql_query = f"SELECT EMAIL FROM 'user-data' WHERE USER_ID = ?"
+		retrieved_data = db.c.execute(sql_query, (self._user_id,)).fetchone()[0]
+		return retrieved_data
+
+	def set_email_address(self):
+		if self.email_address:
+			sql_query = f"""
+						UPDATE 'user-data'
+						SET EMAIL = ?
+						WHERE USER_ID = ?
+						"""
+
+			db.c.execute(sql_query, (self.email_address, self._user_id))
+			db.conn.commit()
+			Dialog = dialog.Dialog("Email updated successfully!", dialogName="Success.")
+			Dialog.exec_()
+		else:
+			Dialog = dialog.Dialog("Invalid email!", dialogName="Invalid email.")
+			Dialog.exec_()

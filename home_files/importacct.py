@@ -19,6 +19,7 @@ class SharedImportMethods:
 	This should never be instantiated, only inherited."""
 	get_old_user_id_length = lambda self, folder_or_password_title: len(str(folder_or_password_title.split("-")[0]))
 
+
 class InitialImportAccount(SharedImportMethods):
 	"""This is a class used to import data from .psm files. This class handles the initial part of importing."""
 	def __init__(self):
