@@ -24,12 +24,25 @@
        </sizepolicy>
       </property>
       <property name="text">
-       <string>Back</string>
+       <string>Go Back</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="0" colspan="2">
+    <item row="2" column="0" colspan="3">
      <layout class="QGridLayout" name="gridLayout"/>
+    </item>
+    <item row="0" column="1">
+     <widget class="QPushButton" name="logOutButton">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Log Out</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

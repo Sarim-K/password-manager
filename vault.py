@@ -5,6 +5,8 @@ import traceback
 
 # external libaries
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QShortcut
 
 # local imports
 from vault_files.enterdatadialog import *
@@ -211,8 +213,14 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		self.newEntry.triggered.connect(self.addEntry)
 		self.newPassword.triggered.connect(self.generatePassword)
 
-		self.enterKey = QtWidgets.QShortcut(QtGui.QKeySequence("Return"), self)	# return is enter for some reason
-		self.enterKey.activated.connect(self.search)
+		self.newEntryShortcut = QShortcut(QKeySequence('Ctrl+E'), self)
+		self.newEntryShortcut.activated.connect(self.addEntry)
+
+		self.newFolderShortcut = QShortcut(QKeySequence('Ctrl+F'), self)
+		self.newFolderShortcut.activated.connect(self.addFolder)
+
+		self.generatePasswordShortcut = QShortcut(QKeySequence('Ctrl+N'), self)
+		self.generatePasswordShortcut.activated.connect(self.generatePassword)
 
 		_later_import_object = importacct.LaterImportAccount(self._user_id, self._key)
 		del _later_import_object

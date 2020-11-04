@@ -31,13 +31,14 @@ class InitialImportAccount(SharedImportMethods):
 
 		_contents, _passwords, _details = self.separate_dict(_data)
 		_existing_usernames = self.get_existing_usernames()
-		_new_username = self.check_if_username_exists(_existing_usernames, _details[0])
+		details[0] = self.check_if_username_exists(_existing_usernames, _details[0])
+		details = self.format_details()
 
 		if _new_username != _details[0]:
 			Dialog = dialog.Dialog(f"Your username is taken, your new username is {_new_username}", dialogName="New username.")
 			Dialog.exec_()
 
-		self.create_login_details(_new_username, _details[1])
+		self.create_login_details(details)
 		_user_id = self.get_new_user_id(_new_username)
 
 		_old_user_id_length = self.get_old_user_id_length(list(_contents.keys())[0])
@@ -87,12 +88,18 @@ class InitialImportAccount(SharedImportMethods):
 			else:
 				return new_username
 
-	def create_login_details(self, username, password):
+        def format_details(self, details):
+                details.insert(0, None)
+                details[3] = 1
+                details = tuple(details)
+                return details
+
+	def create_login_details(self, details):
 		sql_query = f"""
 		INSERT OR REPLACE INTO 'user-data'
-		VALUES(?, ?, ?, ?)
+		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		"""
-		db.c.execute(sql_query, (None, username, password, 1))
+		db.c.execute(sql_query, details)
 		db.conn.commit()
 
 	def get_new_user_id(self, username):
@@ -175,10 +182,13 @@ class LaterImportAccount(SharedImportMethods):
 
 	def check_if_imported(self, user_id):
 		sql_query = f"SELECT IMPORTED FROM 'user-data' WHERE USER_ID = ?"
-		retrieved_data = db.c.execute(sql_query, (user_id,)).fetchone()[0]
-		if retrieved_data:
-			return True
-		else:
+		retrieved_data = db.c.execute(sql_query, (user_id,))
+		try:
+			if retrieved_data[0]:
+				return True
+			else:
+				return False
+		except TypeError:
 			return False
 
 	def get_passwords(self, user_id):

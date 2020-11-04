@@ -39,23 +39,8 @@ class Register(QtWidgets.QDialog):
 		password = self.passwordEdit.text()
 		passwordRetype = self.passwordRetypeEdit.text()
 
-		# validate for username length
-		if len(username) <5 or len(username) > 30:
-			Dialog = dialog.Dialog("Username must be 5 - 30 characters long!", dialogName="Incorrect username.")
-			Dialog.exec_()
-			self.usernameEdit.setText("")
-			return
-
-		# validate for password length
-		elif len(password) <5 or len(password) > 30 or len(passwordRetype) <5 or len(passwordRetype) > 30:
-			Dialog = dialog.Dialog("Password must be 5 - 30 characters long!", dialogName="Incorrect password.")
-			Dialog.exec_()
-			self.passwordEdit.setText("")
-			self.passwordRetypeEdit.setText("")
-			return
-
 		# validate for matching passwords
-		elif password != passwordRetype:
+		if password != passwordRetype:
 			Dialog = dialog.Dialog("Passwords must match!", dialogName="Passwords do not match.")
 			Dialog.exec_()
 			self.passwordEdit.setText("")
@@ -64,15 +49,16 @@ class Register(QtWidgets.QDialog):
 
 		# validate for existing account
 		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = ?"
-		retrieved_data = db.c.execute(sql_query, (username,))
-		try:
-			print(retrieved_data.fetchone()[0])
+		retrieved_data = db.c.execute(sql_query, (username,)).fetchone()
+		if retrieved_data:
 			Dialog = dialog.Dialog("Username already registered!", dialogName="Account already exists.")
 			Dialog.exec_()
 			return
-		except TypeError:
+		else:
 			password = PasswordHasher().hash(password)
+			self.create_account(username, password)
 
+	def create_account(self, username, password):
 		# insert username & password into database
 		sql_query = f"""
 		INSERT OR REPLACE INTO 'user-data'

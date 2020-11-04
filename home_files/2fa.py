@@ -1,2 +1,0 @@
-class TwoFactorAuth:
-    raise NotImplementedError

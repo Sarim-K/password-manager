@@ -20,6 +20,8 @@ class Home(QtWidgets.QMainWindow):
 		super().__init__()
 		uic.loadUi("ui_files/home/home.ui", self)
 
+		self._2fa_status = None
+
 		self.goToLoginButton.clicked.connect(self.goToLogin)
 		self.goToRegisterButton.clicked.connect(self.goToRegister)
 		self.goToImportButton.clicked.connect(self.goToImport)
@@ -27,11 +29,23 @@ class Home(QtWidgets.QMainWindow):
 		self.show()
 
 	def login(self):
-		self.window = vault.Vault(self.login_dialog.user_id, self.login_dialog.password)
+		if self._2fa_status is True or self._2fa_status is None: #if 2fa has been entered sucesfully, or 2fa isnt enabled
+			self.window = vault.Vault(self.login_dialog.user_id, self.login_dialog.password)
 		self.close()
+
+	def tfa(self):
+		Dialog = dialog.InputDialog("Input your 2fa code.", dialogName="Two Factor Authentication.")
+		Dialog.exec_()
+		inputted_code = Dialog.input
+
+		if str(inputted_code) == str(self.login_dialog.tfa_obj.code):
+			self._2fa_status = True
+		else:
+			self._2fa_status = False
 
 	def goToLogin(self):
 		self.login_dialog = login.Login()
+		self.login_dialog.two_factor_check.connect(self.tfa)
 		self.login_dialog.logged_in.connect(self.login)
 		self.login_dialog.exec_()
 

@@ -15,3 +15,22 @@ class Dialog(QtWidgets.QDialog):
 		self.label.setText(self._errorMessage)
 
 		self.show()
+
+
+class InputDialog(QtWidgets.QDialog):
+	"""This class is a generic dialog, mostly used for quick inputs."""
+	def __init__(self, placeholder, dialogName=""):
+		super().__init__()
+		self._placeholder = placeholder
+		uic.loadUi("ui_files/other/inputDialog.ui", self)
+
+		self.OK.clicked.connect(self.close)
+
+		self.setWindowTitle(dialogName)
+		self.lineEdit.setPlaceholderText(placeholder)
+
+		self.show()
+
+	@property
+	def input(self):
+		return self.lineEdit.text()
