@@ -85,6 +85,6 @@ class Export(QtWidgets.QWidget):
 		return passwords_dict
 
 	def get_details(self):
-		sql_query = "SELECT USERNAME, PASSWORD, IMPORTED, EMAIL, SEC_QUES_1, SEC_QUES_2, SEC_QUES_3, SEC_ANS_1, SEC_ANS_2, SEC_ANS_3 FROM 'user-data' WHERE USER_ID = ?"
+		sql_query = "SELECT USERNAME, PASSWORD, IMPORTED, EMAIL FROM 'user-data' WHERE USER_ID = ?"
 		details = db.c.execute(sql_query, (self._user_id,)).fetchone()
 		return details

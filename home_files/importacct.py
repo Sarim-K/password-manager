@@ -31,14 +31,14 @@ class InitialImportAccount(SharedImportMethods):
 
 		_contents, _passwords, _details = self.separate_dict(_data)
 		_existing_usernames = self.get_existing_usernames()
-		details[0] = self.check_if_username_exists(_existing_usernames, _details[0])
-		details = self.format_details()
+		_new_username = self.check_if_username_exists(_existing_usernames, _details[0])
 
 		if _new_username != _details[0]:
 			Dialog = dialog.Dialog(f"Your username is taken, your new username is {_new_username}", dialogName="New username.")
 			Dialog.exec_()
 
-		self.create_login_details(details)
+		_details = self.format_details(_details, _new_username)
+		self.create_login_details(_details)
 		_user_id = self.get_new_user_id(_new_username)
 
 		_old_user_id_length = self.get_old_user_id_length(list(_contents.keys())[0])
@@ -88,16 +88,17 @@ class InitialImportAccount(SharedImportMethods):
 			else:
 				return new_username
 
-        def format_details(self, details):
-                details.insert(0, None)
-                details[3] = 1
-                details = tuple(details)
-                return details
+	def format_details(self, details, new_username):
+		details.insert(0, None)
+		details[1] = new_username
+		details[3] = 1
+		details = tuple(details)
+		return details
 
 	def create_login_details(self, details):
 		sql_query = f"""
 		INSERT OR REPLACE INTO 'user-data'
-		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES(?, ?, ?, ?, ?)
 		"""
 		db.c.execute(sql_query, details)
 		db.conn.commit()
