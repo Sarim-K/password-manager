@@ -21,6 +21,8 @@ class Report(QtWidgets.QWidget, SharedMethods):
 		uic.loadUi("ui_files/settings/vault_checker/report.ui", self)
 		self._report_data = report_data
 
+		self.launchButton.clicked.connect(self.launch_site)
+
 		size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
 		self.setSizePolicy(size_policy)
 
@@ -30,7 +32,7 @@ class Report(QtWidgets.QWidget, SharedMethods):
 	get_user_id_length = lambda self, title: len(str(title.split("-")[0]))
 
 	def launch_site(self):
-		webbrowser.open(self._report_data[2], new=0, autoraise=True)
+		webbrowser.open(self._report_data[1], new=2, autoraise=True)
 
 
 class ReportLayout(QtWidgets.QWidget):
@@ -46,9 +48,9 @@ class ReportLayout(QtWidgets.QWidget):
 						"Strong": 5}
 
 		self._reverse_scores = {1: "Weak",
-								2: "Weak - Medium",
+								2: "Weak / Medium",
 								3: "Medium",
-								4: "Medium - Strong",
+								4: "Medium / Strong",
 								5: "Strong"}
 
 		self.gridLayout = QtWidgets.QGridLayout()
