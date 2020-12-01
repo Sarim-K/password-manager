@@ -62,17 +62,14 @@ class Login(QtWidgets.QDialog):
 
 		try:
 			self._user_id, retrieved_password = self.get_user_id_and_password(username)
-			print(retrieved_password)
 			PasswordHasher().verify(retrieved_password, self._password)
 
 			if self.get_email()[0]:
-				print(self.get_email()[0])
 				self.tfa_obj = tfa.GenerateTwoFactorAuth(self.get_email())
 				self.two_factor_check.emit()
 
 			self.logged_in.emit()	# this is emitted, and then the MainWindow handles closing itself
 			self.close()
-		except Exception as e:
-			print(e)
+		except Exception:
 			Dialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
 			Dialog.exec_()

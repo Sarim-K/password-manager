@@ -266,8 +266,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		try:
 			db.c.execute(sql_query)
 			db.conn.commit()
-		except sqlite3.OperationalError as e:
-			print(e)
+		except sqlite3.OperationalError:
 			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
 			Dialog.exec_()
 
@@ -327,8 +326,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		try:
 			db.c.execute(sql_query)
 			db.conn.commit()
-		except sqlite3.OperationalError as e:
-			print(e)
+		except sqlite3.OperationalError:
 			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
 			Dialog.exec_()
 

@@ -9,10 +9,8 @@ class GenerateTwoFactorAuth():
         super().__init__()
         self._receiver_email = email
         self._code = self.generate_code()
-        print(self._code)
 
         self.email_code()
-        print("nice")
 
     def email_config(self):
         with open("email.txt", "r") as f:
