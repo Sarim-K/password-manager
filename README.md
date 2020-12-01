@@ -21,7 +21,7 @@ Create a file in the main directory called `email.txt`, and it's contents should
 ```
 example@examplemail.com:examplepassword
 ```
-Note that this has only been tested with gmail accounts with insecure app access enabled, and likely will not work with other service.
+Note that this has only been tested with gmail accounts with insecure app access enabled, and likely will not work with other email services.
 
 ## Usage
-Once these two steps have been performed, open `main.py` to use the application.
+Once the two prerequisite tasks have been completed, open `main.py` to use the application.
