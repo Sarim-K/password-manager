@@ -9,6 +9,7 @@ from backend import database_connection as db
 from backend import encryption as enc
 from settings_files import details
 from settings_files import export
+from settings_files import vaultchecker
 import home
 import vault
 import dialog
@@ -27,8 +28,9 @@ class Settings(QtWidgets.QMainWindow):
 
 		self._details_obj = details.Details(self._user_id, self._password_given)
 		self._details_obj.password_changed.connect(self.set_password_changed)
-
 		self._export_obj = export.Export(self._user_id, self._key)
+		self._vault_checker_obj = vaultchecker.VaultChecker(self._user_id, self._password_given)
+
 
 		self.goBackButton.clicked.connect(self.goBack)
 		self.logOutButton.clicked.connect(self.logout)
@@ -40,6 +42,7 @@ class Settings(QtWidgets.QMainWindow):
 		self.tabwidget = QtWidgets.QTabWidget()
 		self.tabwidget.addTab(self._export_obj, "Export")
 		self.tabwidget.addTab(self._details_obj, "Details")
+		self.tabwidget.addTab(self._vault_checker_obj, "Vault Checker")
 		self.gridLayout.addWidget(self.tabwidget, 0, 0)
 
 	def set_password_changed(self):
