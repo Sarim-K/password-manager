@@ -258,7 +258,6 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		else:
 			folderName = f"{path}{folderName}"      # creates it as a subdirectory of the selected path
 
-		print(folderName)
 		# sql creation statement for the new folder
 		sql_query = f"""
 		CREATE TABLE '{folderName}' (
@@ -284,7 +283,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			Dialog.exec_()
 			return
 
-		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended 
+		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended
 		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{path}%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
@@ -324,9 +323,9 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 				newPath[-1] = folderName
 				for subpath in newPath:
 					final += f"{subpath}/"
-					
 
-		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended 
+
+		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended
 		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{path}%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
@@ -340,7 +339,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 						RENAME TO '{new_folder}';
 						"""
 				db.c.execute(sql_query)
-			db.conn.commit()        
+			db.conn.commit()
 
 		except sqlite3.OperationalError as e:
 			print(e)
