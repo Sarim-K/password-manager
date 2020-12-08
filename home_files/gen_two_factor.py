@@ -36,7 +36,6 @@ class GenerateTwoFactorAuth():
             server.login(sender_email, password)
             server.send_message(self.generate_message(sender_email, self._receiver_email))
 
-
     @property
     def code(self):
         return self._code

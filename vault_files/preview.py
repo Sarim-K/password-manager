@@ -37,7 +37,6 @@ class Preview(QtWidgets.QWidget):
 		sql_query = f"DELETE FROM '{self._user_id}-passwords' WHERE ID = ?"
 		db.c.execute(sql_query, (self.id,))	# remove it from the passwords table
 		db.conn.commit()
-
 		self.changeMade.emit()
 
 	def move(self):

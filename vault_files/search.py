@@ -14,6 +14,7 @@ class Search:
                         title = row[1]
                         unprefixed_title = self.remove_prefix(title)[0]
 
+                        # checks the search term against the criteria and edits the score
                         score += self.exact_match(search_term, unprefixed_title)
                         score += self.same_order(search_term, unprefixed_title)
                         score += self.matching_word(search_term, unprefixed_title)
@@ -46,6 +47,7 @@ class Search:
                         decrypted_data.append(new_row)
                 return decrypted_data
 
+        # removes the user_id-password prefix from title
         def remove_prefix(self, title):
                 new_title = ""
                 title = title.split("-")[2:]
@@ -54,12 +56,14 @@ class Search:
                 new_title = new_title[:-1]
                 return title
 
+        # counts how many matching words there are
         def matching_word(self, search_term, title):
                 score = 0
                 for word in search_term.split(" "):
                         score += title.count(search_term) * 5
                 return score
 
+        # checks to see if they're in the same order, etc: cod is the same order as call of duty and sem is the same order as steam
         def same_order(self, search_term, title):
                 search_term, title = search_term.replace(" ", ""), title.replace(" ", "")
 
@@ -87,7 +91,7 @@ class Search:
 
         def sort_and_format(self, data):
                 formatted_data = []
-                data = sorted(data, key=lambda d: sorted(d.items()))
+                data = sorted(data, key=lambda d: sorted(d.items()))    # sort by score
                 for password in data:
                         formatted_data.append(list(password.values())[0])
                 return formatted_data

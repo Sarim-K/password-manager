@@ -41,6 +41,7 @@ class ExplorerMethods:
 			Explorer.addChild(child)
 			self.drawExplorer(child, val, folders)
 
+	# iterates through the children of the current Explorer selection, while using string concatenation to generate a path.
 	def getCurrentItemPath(self, passwordsEnabled=False):
 		path_array = []
 		final_path = ""
@@ -69,6 +70,7 @@ class ExplorerMethods:
 
 			return final_path
 
+	# decrypts the user's entries, adds them to the explorer
 	def prepareExplorerData(self):
 		folderArray = []
 		folderArray2 = []
@@ -107,6 +109,7 @@ class ExplorerMethods:
 		self.drawExplorer(self.Explorer.invisibleRootItem(), root, folders)
 		self.Explorer.expandAll()
 
+	# turns the paths into a tree-like data structure
 	def append_to_tree(self, node, c):
 		if not c:
 			return
@@ -124,18 +127,15 @@ class ExplorerMethods:
 
 class DrawPreviewMethods:
 	"""This is an abstract class which Vault inherits. This should never be instantiated, only inherited."""
-
 	def get_password_ids(self):
 		final_path = self.getCurrentItemPath()
-
 		sql_query = f"SELECT PASSWORD_ID FROM '{final_path}'"
 		password_ids = db.c.execute(sql_query).fetchall()
 		return password_ids
 
-
+	# used to draw the previews for only a single folder instead of the entire vault
 	def drawFolderPreviews(self):
 		suppliedPreviewData = []
-
 		try:
 			password_ids = self.get_password_ids()
 		except sqlite3.OperationalError:
@@ -157,6 +157,7 @@ class DrawPreviewMethods:
 		data = db.c.execute(sql_query).fetchall()
 		return data
 
+	# fills the grid layout with the supplied data
 	def drawPreviews(self, suppliedPreviewData=False, decrypted=False):
 		x, y = 0, 0
 		max_preview_width = 4 #the previews are 200px long
@@ -253,10 +254,12 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 
 		path = self.getCurrentItemPath()
 		if path is None or path == f"{self._user_id}-folder-All/":
-			folderName = f"{self._user_id}-folder-{folderName}"
+			folderName = f"{self._user_id}-folder-{folderName}"     # creates the folder as a main directory
 		else:
-			folderName = f"{path}{folderName}"
+			folderName = f"{path}{folderName}"      # creates it as a subdirectory of the selected path
 
+		print(folderName)
+		# sql creation statement for the new folder
 		sql_query = f"""
 		CREATE TABLE '{folderName}' (
 		PASSWORD_ID INTEGER PRIMARY KEY,
@@ -266,7 +269,8 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 		try:
 			db.c.execute(sql_query)
 			db.conn.commit()
-		except sqlite3.OperationalError:
+		except sqlite3.OperationalError as e:
+			print(e)
 			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
 			Dialog.exec_()
 
@@ -280,9 +284,11 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			Dialog.exec_()
 			return
 
+		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended 
 		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{path}%' ORDER BY name ASC"
 		folders = db.c.execute(sql_query).fetchall()
 
+		# deleting the folders
 		for folder in folders:
 			sql_query = f"DROP TABLE '{folder[0]}'"
 			db.c.execute(sql_query)
@@ -307,7 +313,7 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 				return
 
 			newPath = path.split("/")
-			if len(newPath) == 2:	# not a subdirectory
+			if len(newPath) == 2:	# if not a subdirectory
 				newPath = path.split("-")
 				newPath[-1] = folderName
 				for subpath in newPath:
@@ -318,15 +324,26 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 				newPath[-1] = folderName
 				for subpath in newPath:
 					final += f"{subpath}/"
+					
 
-		sql_query = f"""ALTER TABLE '{path}'
- 					RENAME TO '{final}';
-		  			"""
+		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended 
+		sql_query = f"SELECT name FROM sqlite_master WHERE name LIKE '{path}%' ORDER BY name ASC"
+		folders = db.c.execute(sql_query).fetchall()
 
 		try:
-			db.c.execute(sql_query)
-			db.conn.commit()
-		except sqlite3.OperationalError:
+			folders.reverse()
+			for folder in folders:
+				new_folder = folder[0][len(path):]
+				new_folder = final + new_folder
+
+				sql_query = f"""ALTER TABLE '{folder[0]}'
+						RENAME TO '{new_folder}';
+						"""
+				db.c.execute(sql_query)
+			db.conn.commit()        
+
+		except sqlite3.OperationalError as e:
+			print(e)
 			Dialog = dialog.Dialog("Folder already exists!", dialogName="Pre-existing folder.")
 			Dialog.exec_()
 
@@ -342,9 +359,9 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			return
 
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{self._user_id}-passwords'
-					VALUES(?,?,?,?,?,?,?)
-					"""
+			INSERT OR REPLACE INTO '{self._user_id}-passwords'
+			VALUES(?,?,?,?,?,?,?)
+			"""
 		try:
 			db.c.execute(sql_query, (None, details["title"], details["url"], details["username"], details["email"], details["password"], details["other"]))
 			db.conn.commit()
@@ -356,16 +373,16 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			path = f"{self._user_id}-folder-All/"
 
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{path}'
-					VALUES(?)
-					"""
+			INSERT OR REPLACE INTO '{path}'
+			VALUES(?)
+			"""
 		db.c.execute(sql_query, (db.c.lastrowid,))
 		db.conn.commit()
 
 		sql_query = f"""
-					INSERT OR REPLACE INTO '{self._user_id}-folder-All/'
-					VALUES(?)
-					"""
+			INSERT OR REPLACE INTO '{self._user_id}-folder-All/'
+			VALUES(?)
+			"""
 		db.c.execute(sql_query, (db.c.lastrowid,))
 		db.conn.commit()
 

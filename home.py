@@ -43,15 +43,18 @@ class Home(QtWidgets.QMainWindow):
 		else:
 			self._2fa_status = False
 
+        # switch to login page
 	def goToLogin(self):
 		self.login_dialog = login.Login()
 		self.login_dialog.two_factor_check.connect(self.tfa)
 		self.login_dialog.logged_in.connect(self.login)
 		self.login_dialog.exec_()
 
+        # switch to register page
 	def goToRegister(self):
 		Dialog = register.Register()
 		Dialog.exec_()
 
+        # open import account functionality
 	def goToImport(self):
 		_ = importacct.InitialImportAccount()

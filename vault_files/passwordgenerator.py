@@ -43,6 +43,7 @@ class PasswordGenerator(QtWidgets.QDialog):
 
 	def generatePassword(self):
 		generated = ""
+		# generates selected amount of random characters for password
 		for _ in range(self.lengthSlider.value()):
 			generated += random.choice("""0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()*+,-./:;<=>?@[]^_`{|}~""")
 		self.passwordEdit.setText(generated)

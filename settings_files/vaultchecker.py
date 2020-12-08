@@ -5,19 +5,21 @@ from backend import encryption as enc
 from backend import database_connection as db
 
 class SharedMethods:
-	def calculate_strength(self, string):
-		if len(string)>=8:
-		    if bool(re.match('((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,30})', string)) == True:
-		        return "Strong"
-		    elif bool(re.match('((\d*)([a-z]*)([A-Z]*)([!@#$%^&*]*).{8,30})', string)) == True:
-		        return "Medium"
-		else:
-		    return "Weak"
+        def calculate_strength(self, string):
+                print(string)
+                if len(string)>=8:
+                        if bool(re.match('((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,30})', string)) == True:
+                                return "Strong"
+                        elif bool(re.match('((\d*)([a-z]*)([A-Z]*)([!@#$%^&*]*).{8,30})', string)) == True:
+                                return "Medium"
+                else:
+                        return "Weak"
 
 
 class Report(QtWidgets.QWidget, SharedMethods):
 	def __init__(self, report_data):	# title, url, password
 		super().__init__()
+		print(report_data[1])
 		uic.loadUi("ui_files/settings/vault_checker/report.ui", self)
 		self._report_data = report_data
 
@@ -29,6 +31,7 @@ class Report(QtWidgets.QWidget, SharedMethods):
 		self.titleLabel.setText(report_data[0][self.get_user_id_length(report_data[0])+10:])
 		self.strengthLabel.setText(self.calculate_strength(report_data[1]))
 
+
 	get_user_id_length = lambda self, title: len(str(title.split("-")[0]))
 
 	def launch_site(self):
@@ -38,20 +41,18 @@ class Report(QtWidgets.QWidget, SharedMethods):
 class ReportLayout(QtWidgets.QWidget):
 	def __init__(self, list_of_report_data):
 		super().__init__()
-
 		self._overall_list = []
-
 		self._scores = {"Weak": 1,
-						"Weak - Medium": 2,
-						"Medium": 3,
-						"Medium - Strong": 4,
-						"Strong": 5}
+				"Weak - Medium": 2,
+				"Medium": 3,
+				"Medium - Strong": 4,
+				"Strong": 5}
 
 		self._reverse_scores = {1: "Weak",
-								2: "Weak / Medium",
-								3: "Medium",
-								4: "Medium / Strong",
-								5: "Strong"}
+					2: "Weak / Medium",
+					3: "Medium",
+					4: "Medium / Strong",
+					5: "Strong"}
 
 		self.gridLayout = QtWidgets.QGridLayout()
 		for report_data in list_of_report_data:

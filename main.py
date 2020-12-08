@@ -10,7 +10,7 @@ if __name__ == "__main__":
 	from backend import database_connection as db
 	import home
 
-
+        # ensure the main database exists
 	sql_query = """
 	CREATE TABLE IF NOT EXISTS 'user-data' (
 	USER_ID 	INTEGER 		PRIMARY KEY,
@@ -22,6 +22,7 @@ if __name__ == "__main__":
 	db.c.execute(sql_query)
 	db.conn.commit()
 
+        # create mainwindow as home screen
 	app = QtWidgets.QApplication(sys.argv)
 	window = home.Home()
 	app.exec_()

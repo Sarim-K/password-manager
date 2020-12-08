@@ -89,6 +89,7 @@ class InitialImportAccount(SharedImportMethods):
 				return new_username
 
 	def format_details(self, details, new_username):
+		# re-orders details for being inserted into database
 		details.insert(0, None)
 		details[1] = new_username
 		details[3] = 1
@@ -109,6 +110,7 @@ class InitialImportAccount(SharedImportMethods):
 		return user_id
 
 	def replace_folder_user_ids(self, user_id, old_user_id_length, contents):
+		# old user id in folder names replaced with new user id
 		new_contents = {}
 		for folder in contents:
 			new_contents[(str(user_id)+folder[old_user_id_length:])] = contents[folder]
@@ -230,6 +232,7 @@ class LaterImportAccount(SharedImportMethods):
 		db.conn.commit()
 
 	def set_not_imported(self, user_id):
+		# so that we dont need to instantiate this class next time we log in
 		sql_query = f"""UPDATE 'user-data'
 					SET IMPORTED = 0
 					WHERE USER_ID = ?

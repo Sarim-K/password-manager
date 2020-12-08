@@ -26,6 +26,7 @@ class Settings(QtWidgets.QMainWindow):
 		self._key = enc.create_key(password_given)
 		self._password_changed = False
 
+                # creates the individual settings widgets
 		self._details_obj = details.Details(self._user_id, self._password_given)
 		self._details_obj.password_changed.connect(self.set_password_changed)
 		self._export_obj = export.Export(self._user_id, self._key)
@@ -38,6 +39,7 @@ class Settings(QtWidgets.QMainWindow):
 		self.initUI()
 		self.show()
 
+        # adds the individual settings widgets to the QTabWidget
 	def initUI(self):
 		self.tabwidget = QtWidgets.QTabWidget()
 		self.tabwidget.addTab(self._export_obj, "Export")
