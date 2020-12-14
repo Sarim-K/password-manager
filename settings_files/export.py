@@ -87,4 +87,7 @@ class Export(QtWidgets.QWidget):
 	def get_details(self):
 		sql_query = "SELECT USERNAME, PASSWORD, IMPORTED, EMAIL FROM 'user-data' WHERE USER_ID = ?"
 		details = db.c.execute(sql_query, (self._user_id,)).fetchone()
+
+		if details[3]:
+			details[3] = details[3].decode("utf-8")
 		return details

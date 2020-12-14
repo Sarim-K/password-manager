@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 # local imports
 from backend import database_connection as db
+from backend import encryption as enc
 from home_files import gen_two_factor as tfa
 import dialog, vault
 
@@ -64,12 +65,17 @@ class Login(QtWidgets.QDialog):
 			self._user_id, retrieved_password = self.get_user_id_and_password(username)
 			PasswordHasher().verify(retrieved_password, self._password)
 
-			if self.get_email()[0]:
-				self.tfa_obj = tfa.GenerateTwoFactorAuth(self.get_email())
+			email = self.get_email()[0]
+			if email:         
+				key = enc.create_key(self._password)
+				email = enc.decrypt(key, email).decode("utf-8")
+
+				self.tfa_obj = tfa.GenerateTwoFactorAuth(email)
 				self.two_factor_check.emit()
 
 			self.logged_in.emit()	# this is emitted, and then the MainWindow handles closing itself
 			self.close()
+
 		except Exception:
 			Dialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
 			Dialog.exec_()

@@ -26,13 +26,14 @@ class EmailAddressMethods:
 
 	def set_email_address(self):
 		if self.email_address:
+			enc_email_address = enc.encrypt(self._key, self.email_address)
 			sql_query = f"""
 						UPDATE 'user-data'
 						SET EMAIL = ?
 						WHERE USER_ID = ?
 						"""
 
-			db.c.execute(sql_query, (self.email_address, self._user_id))
+			db.c.execute(sql_query, (enc_email_address, self._user_id))
 			db.conn.commit()
 			Dialog = dialog.Dialog("Email updated successfully!", dialogName="Success.")
 			Dialog.exec_()
@@ -129,6 +130,7 @@ class PasswordChangeMethods:
 
 class Details(QtWidgets.QWidget, EmailAddressMethods, PasswordChangeMethods):
 	password_changed = QtCore.pyqtSignal()
+	deleted_account = QtCore.pyqtSignal()
 	"""This class pulls from ui_files/settings/details.ui for it's UI elements, and is a widget within the Settings MainWindow."""
 	def __init__(self, user_id, password_given):
 		super().__init__()
@@ -138,8 +140,44 @@ class Details(QtWidgets.QWidget, EmailAddressMethods, PasswordChangeMethods):
 		self._user_id = user_id
 
 		if self.existing_email_address:
-			self.lineEdit.setText(self.existing_email_address)
+			decrypted_existing_email = enc.decrypt(self._key, self.existing_email_address).decode("utf-8")
+			self.lineEdit.setText(decrypted_existing_email)
 
 		self.removeEmail.clicked.connect(self.remove_email_address)
 		self.OKButton.clicked.connect(self.set_email_address)
 		self.passwordOKButton.clicked.connect(self.change_pass)
+		self.deleteAccount.clicked.connect(self.delete_account)
+
+	def get_password(self):
+		sql_query = f"SELECT PASSWORD FROM 'user-data' WHERE USER_ID = ?"
+		retrieved_data = db.c.execute(sql_query, (self._user_id,)).fetchone()
+		return retrieved_data[0]	# user_id, password
+
+	def delete_account(self):
+		retrieved_password = self.get_password()
+		Dialog = dialog.InputDialog("Verify your password in order to delete your account:", dialogName="Input password.", passwordMode=True)
+		Dialog.exec_()
+
+		try:
+			PasswordHasher().verify(retrieved_password, Dialog.input)
+		except Exception as e:
+			Dialog = dialog.Dialog("Incorrect password!", dialogName="Incorrect password.")
+			Dialog.exec_()
+			return
+
+		sql_query = f"""SELECT name
+			FROM sqlite_master
+			WHERE type = 'table'
+			AND name LIKE '{self._user_id}-%'
+			"""
+		tables = db.c.execute(sql_query).fetchall()
+
+		for table in tables:
+			sql_query = f"DROP TABLE '{table[0]}'"
+			db.c.execute(sql_query)
+
+		sql_query = f"DELETE FROM 'user-data' WHERE USER_ID = ?"
+		db.c.execute(sql_query, (self._user_id,))
+		db.conn.commit()
+
+		self.deleted_account.emit()
