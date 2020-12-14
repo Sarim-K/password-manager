@@ -5,15 +5,15 @@ from backend import encryption as enc
 from backend import database_connection as db
 
 class SharedMethods:
-        def calculate_strength(self, string):
-                print(string)
-                if len(string)>=8:
-                        if bool(re.match('((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,30})', string)) == True:
-                                return "Strong"
-                        elif bool(re.match('((\d*)([a-z]*)([A-Z]*)([!@#$%^&*]*).{8,30})', string)) == True:
-                                return "Medium"
-                else:
-                        return "Weak"
+	def calculate_strength(self, string):
+		print(string)
+		if len(string)>=8:
+			if bool(re.match('((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,30})', string)) == True:
+				return "Strong"
+			elif bool(re.match('((\d*)([a-z]*)([A-Z]*)([!@#$%^&*]*).{8,30})', string)) == True:
+				return "Medium"
+		else:
+			return "Weak"
 
 
 class Report(QtWidgets.QWidget, SharedMethods):
@@ -42,13 +42,15 @@ class ReportLayout(QtWidgets.QWidget):
 	def __init__(self, list_of_report_data):
 		super().__init__()
 		self._overall_list = []
-		self._scores = {"Weak": 1,
+		self._scores = {"N/A": 0,
+				"Weak": 1,
 				"Weak - Medium": 2,
 				"Medium": 3,
 				"Medium - Strong": 4,
 				"Strong": 5}
 
-		self._reverse_scores = {1: "Weak",
+		self._reverse_scores = {0: "N/A",
+					1: "Weak",
 					2: "Weak / Medium",
 					3: "Medium",
 					4: "Medium / Strong",
@@ -110,5 +112,8 @@ class VaultChecker(QtWidgets.QWidget, SharedMethods):
 		self._data = db.c.execute(sql_query).fetchall()
 
 	def calculate_overall(self):
-		overall = int(sum(self.layout.overall_list) / len(self.layout.overall_list))
+		try:
+			overall = int(sum(self.layout.overall_list) / len(self.layout.overall_list))
+		except ZeroDivisionError:
+			overall = 0
 		return self.layout.reverse_scores[overall]
