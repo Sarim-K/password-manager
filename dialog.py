@@ -19,7 +19,7 @@ class Dialog(QtWidgets.QDialog):
 
 class InputDialog(QtWidgets.QDialog):
 	"""This class is a generic dialog, mostly used for quick inputs."""
-	def __init__(self, placeholder, dialogName=""):
+	def __init__(self, placeholder, dialogName="", passwordMode=False):
 		super().__init__()
 		self._placeholder = placeholder
 		uic.loadUi("ui_files/other/inputDialog.ui", self)
@@ -28,6 +28,9 @@ class InputDialog(QtWidgets.QDialog):
 
 		self.setWindowTitle(dialogName)
 		self.lineEdit.setPlaceholderText(placeholder)
+
+		if passwordMode:
+			self.lineEdit.setEchoMode(QtWidgets.QLineEdit.Password)
 
 		self.show()
 

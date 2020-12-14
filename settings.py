@@ -26,9 +26,10 @@ class Settings(QtWidgets.QMainWindow):
 		self._key = enc.create_key(password_given)
 		self._password_changed = False
 
-                # creates the individual settings widgets
+        # creates the individual settings widgets
 		self._details_obj = details.Details(self._user_id, self._password_given)
 		self._details_obj.password_changed.connect(self.set_password_changed)
+		self._details_obj.deleted_account.connect(self.logout)
 		self._export_obj = export.Export(self._user_id, self._key)
 		self._vault_checker_obj = vaultchecker.VaultChecker(self._user_id, self._password_given)
 
