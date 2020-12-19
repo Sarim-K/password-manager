@@ -94,6 +94,7 @@ class InitialImportAccount(SharedImportMethods):
 		details[1] = new_username
 		details[3] = 1
 		details = tuple(details)
+		print(details)
 		return details
 
 	def create_login_details(self, details):
@@ -174,6 +175,7 @@ class LaterImportAccount(SharedImportMethods):
 	This is instantiated when the imported account is logged into for the first time, from vault.py, exclusively."""
 	def __init__(self, _user_id, _key):
 		_imported = self.check_if_imported(_user_id)
+		print(_imported)
 		if _imported:
 			_folder_name = self.get_a_folder_name(_user_id)
 			_passwords = self.get_passwords(_user_id)
@@ -185,7 +187,8 @@ class LaterImportAccount(SharedImportMethods):
 
 	def check_if_imported(self, user_id):
 		sql_query = f"SELECT IMPORTED FROM 'user-data' WHERE USER_ID = ?"
-		retrieved_data = db.c.execute(sql_query, (user_id,))
+		retrieved_data = db.c.execute(sql_query, (user_id,)).fetchone()
+		print(retrieved_data)
 		try:
 			if retrieved_data[0]:
 				return True
@@ -211,7 +214,9 @@ class LaterImportAccount(SharedImportMethods):
 		for entry in data:
 			new_entry = list(entry)
 			decrypted_title = enc.decrypt(key, entry[1]).decode("utf-8")
+			print(decrypted_title)
 			decrypted_title = self.replace_title_user_id(user_id, old_user_id_length, decrypted_title)
+			print(decrypted_title)
 			new_entry[1] = decrypted_title	# entry[1] is the title
 			new_data.append(new_entry)
 		return new_data
