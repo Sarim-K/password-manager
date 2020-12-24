@@ -4,14 +4,14 @@ from email.message import EmailMessage
 import random
 import dialog
 
-class GenerateTwoFactorAuth():
+class GenerateTwoFactorAuth:
     def __init__(self, email):
         super().__init__()
         self._receiver_email = email
         self._code = self.generate_code()
 
         self.email_code()
-
+    
     def email_config(self):
         with open("email.txt", "r") as f:
             return f.readline().split(":")
