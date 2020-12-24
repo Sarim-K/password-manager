@@ -47,6 +47,18 @@ class Register(QtWidgets.QDialog):
 			self.passwordRetypeEdit.setText("")
 			return
 
+		if len(username) < 4:
+			Dialog = dialog.Dialog("Username must be longer than 3 characters!", dialogName="Username is not long enough.")
+			Dialog.exec_()
+			self.usernameEdit.setText("")
+			return
+
+		if len(password) < 4:
+			Dialog = dialog.Dialog("Password must be longer than 3 characters!", dialogName="Password is not long enough.")
+			Dialog.exec_()
+			self.passwordEdit.setText("")
+			return
+
 		# validate for existing account
 		sql_query = f"SELECT USERNAME FROM 'user-data' WHERE USERNAME = ?"
 		retrieved_data = db.c.execute(sql_query, (username,)).fetchone()
