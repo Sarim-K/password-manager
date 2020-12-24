@@ -320,9 +320,11 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 				final = final[:-1]
 
 			else:
-				newPath[-1] = folderName
+				newPath[-2] = folderName
 				for subpath in newPath:
 					final += f"{subpath}/"
+				final = final.rstrip('/')
+				final += "/"
 
 
 		# get the folder and it's subfolders, as the path of it's subdirectories will be the same as its own path, just with something appended
@@ -333,8 +335,11 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			folders.reverse()
 			for folder in folders:
 				new_folder = folder[0][len(path):]
+				print(folder[0], "------>", new_folder)
 				new_folder = final + new_folder
+				print(final, new_folder)
 
+				#print(folder[0], "-->", new_folder)
 				sql_query = f"""ALTER TABLE '{folder[0]}'
 						RENAME TO '{new_folder}';
 						"""
