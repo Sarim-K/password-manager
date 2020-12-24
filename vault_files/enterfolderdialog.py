@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 # local imports
 from backend import database_connection as db
 from backend import encryption as enc
-
+import dialog
 
 class enterFolderDialog(QtWidgets.QDialog):
 	"""This class is a dialog used to create / edit a folder."""
@@ -35,7 +35,7 @@ class enterFolderDialog(QtWidgets.QDialog):
 
 	def validateText(self):
 		if self.lineEdit.text() == "":
-			Dialog = dialog.Dialog("You cannot have an blank folder name!", dialogName="Blank folder name.")
+			Dialog = dialog.Dialog("You cannot have a blank folder name!", dialogName="Blank folder name.")
 			Dialog.exec_()
 			self.close()
 

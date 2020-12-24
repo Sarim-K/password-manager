@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from backend import database_connection as db
 from backend import encryption as enc
 from vault_files.passwordgenerator import *
+import dialog
 
 
 class enterDataDialog(QtWidgets.QDialog):
