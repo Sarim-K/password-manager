@@ -335,11 +335,8 @@ class Vault(QtWidgets.QMainWindow, ExplorerMethods, DrawPreviewMethods):
 			folders.reverse()
 			for folder in folders:
 				new_folder = folder[0][len(path):]
-				print(folder[0], "------>", new_folder)
 				new_folder = final + new_folder
-				print(final, new_folder)
 
-				#print(folder[0], "-->", new_folder)
 				sql_query = f"""ALTER TABLE '{folder[0]}'
 						RENAME TO '{new_folder}';
 						"""
