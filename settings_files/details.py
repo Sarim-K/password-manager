@@ -61,6 +61,9 @@ class PasswordChangeMethods:
 	def new_master_password(self):
 		return self.passEdit.text()
 
+	def validate(self):
+		return len(self.passEdit.text()) > 3
+
 	def get_passwords(self):
 		passwords = {}
 		sql_query = f"SELECT * FROM '{self._user_id}-passwords'"
@@ -119,6 +122,13 @@ class PasswordChangeMethods:
 		db.conn.commit()
 
 	def change_pass(self):
+		bool = self.validate()
+		if not bool:
+			Dialog = dialog.Dialog("Password must be 4 characters or longer!", dialogName="Password is not long enough.")
+			Dialog.exec_()
+			self.passEdit.setText("")
+			return
+
 		data = self.get_passwords()
 		data = self.decrypt_data(data)
 		data = self.encrypt_data(data)
