@@ -37,9 +37,11 @@ class PasswordGenerator(QtWidgets.QDialog):
 
 	def setLengthSlider(self):
 		try:
-			self.lengthSlider.setValue(int(self.lengthEdit.text()))
+			n = max(min(int(self.lengthEdit.text()), 50), 0)
 		except ValueError:
-			self.lengthEdit.setText(str(0))
+			n = 0
+		finally:
+			self.lengthEdit.setText(str(n))
 
 	def generatePassword(self):
 		generated = ""
